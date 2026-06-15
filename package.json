@@ -1,0 +1,13 @@
+{
+  "name": "meta-reporting-dashboard",
+  "version": "0.1.0",
+  "description": "Wochen- & Monats-Reporting für Instagram, Facebook und YouTube — lokal, ohne Cloud.",
+  "type": "module",
+  "scripts": {
+    "dashboard": "node dashboard/server.js",
+    "fetch": "node src/fetch.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

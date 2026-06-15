@@ -1,0 +1,62 @@
+{
+  "_hinweis": "BEISPIEL-DATEN. Feldnamen entsprechen dem aktuellen API-Stand (Juni 2026): 'views' statt 'impressions', 'linkTaps' statt 'website_clicks'. Sobald der echte Fetcher läuft, schreibt er data/weekly.json.",
+  "generatedAt": "2026-06-13T09:00:00.000Z",
+  "weeks": [
+    {
+      "kw": 16, "year": 2026, "weekStart": "2026-04-13",
+      "channels": {
+        "instagram": { "views": { "organic": 9800, "paid": 1500 }, "reach": { "organic": 7600, "paid": 1300 }, "reach28d": 18000, "views28d": 22000, "interactions": 620, "profileViews": 310, "linkTaps": 70, "followersGained": 33, "followersTotal": 8290, "saves": 175, "shares": 78 },
+        "facebook":  { "views": { "organic": 5800, "paid": 3900 }, "reach": { "organic": 4700, "paid": 3200 }, "reach28d": 13000, "views28d": 16000, "interactions": 360, "profileViews": 185, "linkTaps": 49, "followersGained": 18, "followersTotal": 5150, "saves": 0, "shares": 54 },
+        "youtube":   { "views": { "organic": 3600, "paid": 0 }, "reach": { "organic": 3000, "paid": 0 }, "interactions": 150, "profileViews": 0, "linkTaps": 0, "followersGained": 26, "followersTotal": 3100, "saves": 0, "shares": 20, "video": { "watchTimeHours": 180, "avgViewDurationSec": 158, "retentionPct": 40, "subsGained": 32, "subsLost": 6, "thumbnailCTR": 4.9 } }
+      }
+    },
+    {
+      "kw": 18, "year": 2026, "weekStart": "2026-04-27",
+      "channels": {
+        "instagram": { "views": { "organic": 10400, "paid": 2000 }, "reach": { "organic": 8000, "paid": 1700 }, "reach28d": 19500, "views28d": 25000, "interactions": 690, "profileViews": 350, "linkTaps": 76, "followersGained": 38, "followersTotal": 8345, "saves": 195, "shares": 88 },
+        "facebook":  { "views": { "organic": 6100, "paid": 4500 }, "reach": { "organic": 4900, "paid": 3700 }, "reach28d": 14000, "views28d": 18000, "interactions": 390, "profileViews": 200, "linkTaps": 54, "followersGained": 21, "followersTotal": 5175, "saves": 0, "shares": 60 },
+        "youtube":   { "views": { "organic": 3900, "paid": 0 }, "reach": { "organic": 3200, "paid": 0 }, "interactions": 165, "profileViews": 0, "linkTaps": 0, "followersGained": 28, "followersTotal": 3150, "saves": 0, "shares": 22, "video": { "watchTimeHours": 195, "avgViewDurationSec": 160, "retentionPct": 41, "subsGained": 34, "subsLost": 7, "thumbnailCTR": 5.0 } }
+      }
+    },
+    {
+      "kw": 20, "year": 2026, "weekStart": "2026-05-11",
+      "channels": {
+        "instagram": { "views": { "organic": 11200, "paid": 2400 }, "reach": { "organic": 8600, "paid": 2100 }, "reach28d": 22000, "views28d": 30000, "interactions": 740, "profileViews": 380, "linkTaps": 82, "followersGained": 41, "followersTotal": 8400, "saves": 210, "shares": 95 },
+        "facebook":  { "views": { "organic": 6400, "paid": 5200 }, "reach": { "organic": 5100, "paid": 4300 }, "reach28d": 16500, "views28d": 21000, "interactions": 410, "profileViews": 210, "linkTaps": 58, "followersGained": 23, "followersTotal": 5200, "saves": 0, "shares": 62 },
+        "youtube":   { "views": { "organic": 4200, "paid": 0 }, "reach": { "organic": 3500, "paid": 0 }, "interactions": 180, "profileViews": 0, "linkTaps": 0, "followersGained": 30, "followersTotal": 3200, "saves": 0, "shares": 25, "video": { "watchTimeHours": 210, "avgViewDurationSec": 165, "retentionPct": 42, "subsGained": 38, "subsLost": 8, "thumbnailCTR": 5.2 } }
+      }
+    },
+    {
+      "kw": 21, "year": 2026, "weekStart": "2026-05-18",
+      "channels": {
+        "instagram": { "views": { "organic": 12950, "paid": 3100 }, "reach": { "organic": 9400, "paid": 2700 }, "reach28d": 23500, "views28d": 33000, "interactions": 905, "profileViews": 455, "linkTaps": 110, "followersGained": 67, "followersTotal": 8467, "saves": 265, "shares": 120 },
+        "facebook":  { "views": { "organic": 6900, "paid": 4800 }, "reach": { "organic": 5500, "paid": 3900 }, "reach28d": 17000, "views28d": 23000, "interactions": 470, "profileViews": 240, "linkTaps": 63, "followersGained": 19, "followersTotal": 5219, "saves": 0, "shares": 70 },
+        "youtube":   { "views": { "organic": 5100, "paid": 0 }, "reach": { "organic": 4200, "paid": 0 }, "interactions": 220, "profileViews": 0, "linkTaps": 0, "followersGained": 35, "followersTotal": 3235, "saves": 0, "shares": 30, "video": { "watchTimeHours": 260, "avgViewDurationSec": 172, "retentionPct": 44, "subsGained": 44, "subsLost": 9, "thumbnailCTR": 5.6 } }
+      }
+    },
+    {
+      "kw": 22, "year": 2026, "weekStart": "2026-05-25",
+      "channels": {
+        "instagram": { "views": { "organic": 10800, "paid": 6500 }, "reach": { "organic": 8100, "paid": 5400 }, "reach28d": 24000, "views28d": 35000, "interactions": 1180, "profileViews": 520, "linkTaps": 134, "followersGained": 92, "followersTotal": 8559, "saves": 340, "shares": 168 },
+        "facebook":  { "views": { "organic": 7200, "paid": 3100 }, "reach": { "organic": 5800, "paid": 2600 }, "reach28d": 17500, "views28d": 24000, "interactions": 510, "profileViews": 268, "linkTaps": 71, "followersGained": 28, "followersTotal": 5247, "saves": 0, "shares": 78 },
+        "youtube":   { "views": { "organic": 6800, "paid": 0 }, "reach": { "organic": 5400, "paid": 0 }, "interactions": 310, "profileViews": 0, "linkTaps": 0, "followersGained": 52, "followersTotal": 3287, "saves": 0, "shares": 41, "video": { "watchTimeHours": 340, "avgViewDurationSec": 181, "retentionPct": 46, "subsGained": 60, "subsLost": 8, "thumbnailCTR": 6.1 } }
+      }
+    },
+    {
+      "kw": 23, "year": 2026, "weekStart": "2026-06-01",
+      "channels": {
+        "instagram": { "views": { "organic": 13600, "paid": 1800 }, "reach": { "organic": 9900, "paid": 1600 }, "reach28d": 22500, "views28d": 33000, "interactions": 860, "profileViews": 430, "linkTaps": 98, "followersGained": 54, "followersTotal": 8613, "saves": 250, "shares": 104 },
+        "facebook":  { "views": { "organic": 7500, "paid": 2400 }, "reach": { "organic": 6000, "paid": 2000 }, "reach28d": 16000, "views28d": 22000, "interactions": 480, "profileViews": 255, "linkTaps": 66, "followersGained": 21, "followersTotal": 5268, "saves": 0, "shares": 66 },
+        "youtube":   { "views": { "organic": 5600, "paid": 0 }, "reach": { "organic": 4500, "paid": 0 }, "interactions": 250, "profileViews": 0, "linkTaps": 0, "followersGained": 40, "followersTotal": 3327, "saves": 0, "shares": 33, "video": { "watchTimeHours": 295, "avgViewDurationSec": 176, "retentionPct": 45, "subsGained": 48, "subsLost": 8, "thumbnailCTR": 5.8 } }
+      }
+    },
+    {
+      "kw": 24, "year": 2026, "weekStart": "2026-06-08",
+      "channels": {
+        "instagram": { "views": { "organic": 14250, "paid": 4200 }, "reach": { "organic": 10300, "paid": 3500 }, "reach28d": 23000, "views28d": 34000, "interactions": 1320, "profileViews": 610, "linkTaps": 152, "followersGained": 103, "followersTotal": 8716, "saves": 410, "shares": 195 },
+        "facebook":  { "views": { "organic": 7800, "paid": 5600 }, "reach": { "organic": 6200, "paid": 4600 }, "reach28d": 16500, "views28d": 23000, "interactions": 560, "profileViews": 290, "linkTaps": 78, "followersGained": 34, "followersTotal": 5302, "saves": 0, "shares": 88 },
+        "youtube":   { "views": { "organic": 7400, "paid": 0 }, "reach": { "organic": 5900, "paid": 0 }, "interactions": 360, "profileViews": 0, "linkTaps": 0, "followersGained": 61, "followersTotal": 3388, "saves": 0, "shares": 47, "video": { "watchTimeHours": 380, "avgViewDurationSec": 188, "retentionPct": 48, "subsGained": 69, "subsLost": 8, "thumbnailCTR": 6.4 } }
+      }
+    }
+  ]
+}
