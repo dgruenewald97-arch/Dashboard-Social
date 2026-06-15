@@ -1,0 +1,9 @@
+.git
+.github
+node_modules
+*.local.json
+.agents
+AUDIT.md
+AI-START-HERE.md
+HANDOFF.md
+Dashboard starten.bat
