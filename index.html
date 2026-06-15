@@ -1,0 +1,2980 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Social-Media Reporting</title>
+  <meta name="description" content="Social-Media Reporting Dashboard — Wöchentliche KPIs, Reichweite, Engagement und Content-Performance auf einen Blick.">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+  <style>
+    :root {
+      --bg:#f6f7f9; --card:#ffffff; --line:#e6e8ec; --text:#111418; --muted:#6b7280;
+      --accent:#2f6bff; --accent-soft:#eef3ff; --good:#15a34a; --bad:#dc2626;
+      --organic:#2f6bff; --paid:#f97316; --yt:#e11d48;
+      --shadow:0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.07);
+      --radius:14px;
+      /* 8px spacing scale */
+      --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px;
+      --sp-6:24px; --sp-7:28px; --sp-8:32px; --sp-9:40px; --sp-10:48px;
+    }
+    * { box-sizing:border-box; }
+    html,body { height:100%; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,sans-serif;
+      background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; font-size:15px; line-height:1.5; }
+    a { color:var(--accent); text-decoration:none; }
+    button { font-family:inherit; cursor:pointer; }
+
+    /* ── Grundlayout: Sidebar + Main ── */
+    .app { display:flex; min-height:100vh; }
+    .sidebar { width:248px; flex-shrink:0; background:var(--card); border-right:1px solid var(--line);
+      display:flex; flex-direction:column; padding:22px 16px; position:sticky; top:0; height:100vh; }
+    .brand { font-size:16px; font-weight:700; padding:6px 10px 20px; display:flex; align-items:center; gap:9px; }
+    .brand .logo { width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg,#2f6bff,#7aa2ff);
+      display:grid; place-items:center; font-size:15px; }
+    .nav { display:flex; flex-direction:column; gap:3px; }
+    .nav button { display:flex; align-items:center; gap:11px; width:100%; text-align:left; background:none; border:none;
+      padding:10px 12px; border-radius:10px; font-size:14.5px; color:var(--muted); font-weight:500; }
+    .nav button:hover { background:rgba(255,255,255,0.09); color:#ffffff; }
+    .nav button.active { background:rgba(255,255,255,0.13); color:#ffffff; font-weight:600; border-left:2px solid var(--accent); }
+    .nav .ico { font-size:16px; width:20px; text-align:center; }
+    .side-foot { margin-top:auto; display:flex; flex-direction:column; gap:8px; padding-top:16px; }
+    .conn { font-size:12.5px; padding:9px 11px; border-radius:10px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.82); line-height:1.4; }
+    .conn.live { background:rgba(34,197,94,0.12); border-color:rgba(34,197,94,0.28); color:#4ade80; }
+    .conn.warn { background:rgba(249,115,22,0.12); border-color:rgba(249,115,22,0.28); color:#fb923c; }
+    .conn b { display:block; color:inherit; font-weight:600; }
+    /* ── Schritt 5: Erinnerungs-Banner ── */
+    #reminder:empty { display:none; }
+    .reminder { display:flex; align-items:center; gap:13px; background:rgba(249,115,22,0.1); border:1px solid rgba(249,115,22,0.28); border-radius:12px;
+      padding:13px 16px; margin-bottom:16px; backdrop-filter:blur(20px); }
+    .reminder .r-ic { font-size:20px; flex-shrink:0; }
+    .reminder .r-txt { flex:1; font-size:13.5px; line-height:1.45; color:#ffffff; }
+    .reminder .r-txt b { color:#ffffff; }
+    .reminder .btn.primary { flex-shrink:0; }
+    .reminder .r-x { background:none; border:none; font-size:20px; color:rgba(255,255,255,0.7); cursor:pointer; line-height:1; padding:0 2px; flex-shrink:0; }
+    .reminder .r-x:hover { color:#ffffff; }
+    .btn { background:var(--card); color:var(--text); border:1px solid var(--line); padding:9px 12px; border-radius:10px;
+      font-size:13.5px; font-weight:500; transition:.12s; }
+    .btn:hover { border-color:rgba(255,255,255,0.32); }
+    .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+    .btn.primary:hover { background:#255ce0; }
+    .btn.primary:disabled { opacity:.55; cursor:default; }
+
+    /* ── Hauptbereich ── */
+    .main { flex:1; min-width:0; padding:26px 32px 48px; max-width:1240px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:6px; }
+    .topbar h1 { font-size:22px; margin:0; font-weight:700; letter-spacing:-.01em; }
+    .top-right { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .export { display:inline-flex; gap:6px; }
+    .export .btn { padding:8px 11px; font-size:13px; }
+    .export .btn:disabled { opacity:.55; cursor:default; }
+    .seg { display:inline-flex; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:11px; padding:3px; gap:2px; }
+    .seg button { border:none; background:none; padding:7px 14px; border-radius:8px; font-size:13.5px; color:rgba(255,255,255,0.75); font-weight:500; }
+    .seg button.active { background:rgba(255,255,255,0.14); color:#ffffff; box-shadow:0 1px 0 rgba(255,255,255,0.15) inset; font-weight:600; }
+    .hint { font-size:13px; color:var(--muted); margin:4px 0 0; }
+
+    .group-label { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin:26px 0 12px; font-weight:600; }
+    .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); gap:14px; }
+    .kpi { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:17px 18px; box-shadow:var(--shadow); }
+    .kpi.hero { background:linear-gradient(158deg,rgba(88,117,255,0.12),rgba(255,255,255,0.04)); border-color:rgba(88,117,255,0.3); }
+    .kpi .label { color:var(--muted); font-size:13px; font-weight:500; }
+    .kpi .value { font-size:27px; font-weight:700; margin-top:6px; letter-spacing:-.02em; }
+    .kpi .delta { font-size:12.5px; margin-top:6px; font-weight:500; }
+    .delta.up{color:var(--good);} .delta.down{color:var(--bad);} .delta.flat{color:var(--muted);}
+
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
+    /* Grid-Items müssen unter ihre Inhaltsbreite schrumpfen dürfen, sonst sprengen
+       breite Tabellen/Charts das Layout auf schmalen Viewports (320px). */
+    .grid > * { min-width: 0; }
+    @media (max-width:880px){ .grid{grid-template-columns:1fr;} }
+    .panel { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); }
+    .panel h2 { font-size:14.5px; margin:0 0 16px; font-weight:600; }
+
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th,td { text-align:right; padding:10px 10px; border-bottom:1px solid var(--line); }
+    th:first-child,td:first-child { text-align:left; }
+    th { color:var(--muted); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; }
+    tbody tr:last-child td { border-bottom:none; }
+    tbody tr:hover { background:rgba(255,255,255,0.05); }
+
+    .posts { display:flex; flex-direction:column; gap:9px; }
+    .post { display:flex; align-items:center; gap:13px; padding:11px 13px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); border-radius:11px; }
+    .post .rank { font-size:17px; width:24px; text-align:center; }
+    .post .meta { flex:1; min-width:0; }
+    .post .cap { font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .post .tags { font-size:12px; color:var(--muted); margin-top:2px; }
+    .tag-pill { display:inline-block; padding:1px 8px; border-radius:99px; font-size:11px; margin-left:5px; font-weight:500; }
+    .tag-pill.paid{background:rgba(249,115,22,0.2); border:1px solid rgba(249,115,22,0.35); color:#fb923c;} .tag-pill.organic{background:rgba(88,117,255,0.2); border:1px solid rgba(88,117,255,0.35); color:#829aff;}
+    .post .num { font-size:15px; font-weight:700; text-align:right; white-space:nowrap; }
+    .post .num small { display:block; color:var(--muted); font-weight:400; font-size:11px; }
+    .section-title { font-size:16px; margin:32px 0 6px; font-weight:700; letter-spacing:-0.01em; }
+    /* ── Tabelle: Zebrastreifen ── */
+    tbody tr:nth-child(even) { background: rgba(255,255,255,0.025); }
+    tbody tr:nth-child(even):hover { background: rgba(255,255,255,0.06); }
+    /* ── Info-Karten (ℹ️) ── */
+    .kpi .label { display:flex; align-items:center; gap:6px; }
+    .info { position:relative; display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px;
+      border-radius:50%; background:rgba(255,255,255,0.15); color:rgba(255,255,255,0.85); font-size:10px; font-weight:700; font-style:normal; cursor:help; flex-shrink:0; }
+    .info:hover, .info:focus { background:linear-gradient(135deg,#5875ff,#8a6cff); color:#fff; outline:none; }
+    .tip { display:none; position:absolute; bottom:140%; left:50%; transform:translateX(-50%); width:230px;
+      background:#111418; color:#e9eaee; padding:11px 13px; border-radius:10px; font-size:12px; font-weight:400; line-height:1.5;
+      text-align:left; text-transform:none; letter-spacing:0; box-shadow:0 10px 30px rgba(16,24,40,.3); z-index:30; }
+    .tip::after { content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:6px solid transparent; border-top-color:#111418; }
+    .tip b { display:block; margin-bottom:3px; color:#fff; }
+    .tip .formula { margin-top:7px; color:#9aa0aa; font-style:italic; }
+    .tip.wide { width:320px; }
+    .info:hover .tip, .info:focus .tip { display:block; }
+    /* ── Schritt 2: Chips, Ziele, Sortierung, Aufschlüsselung ── */
+    .chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+    .chips button { font-size:12.5px; padding:5px 11px; border-radius:99px; border:1px solid var(--line); background:var(--card); color:var(--muted); }
+    .chips button:hover { border-color:rgba(255,255,255,0.28); color:#ffffff; }
+    .chips button.active { background:rgba(88,117,255,0.2); border-color:rgba(88,117,255,0.45); color:#a3b8ff; font-weight:600; }
+    .goal { margin-top:9px; }
+    .goal-track { height:5px; background:rgba(255,255,255,0.1); border-radius:99px; overflow:hidden; margin-bottom:4px; }
+    .goal-fill { height:100%; border-radius:99px; }
+    .goal-txt { font-size:11px; color:var(--muted); }
+    th.sortable { cursor:pointer; user-select:none; } th.sortable:hover { color:var(--text); }
+    th .arr { font-size:9px; margin-left:3px; color:var(--accent); }
+    .compbar { display:flex; height:24px; border-radius:7px; overflow:hidden; background:rgba(255,255,255,0.08); }
+    .compbar span { display:block; height:100%; }
+    .leg { display:flex; gap:18px; margin-top:11px; font-size:13px; flex-wrap:wrap; }
+    .leg span { color:var(--muted); }
+    .leg i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:middle; }
+    /* ── Schritt 3: Explorer ── */
+    .exp-row { display:flex; align-items:flex-start; gap:14px; padding:11px 0; border-bottom:1px solid var(--line); }
+    .exp-row:last-child { border-bottom:none; }
+    .exp-lbl { flex-shrink:0; width:96px; font-size:13px; font-weight:600; color:var(--muted); padding-top:6px; display:flex; align-items:center; gap:5px; }
+    .exp-range { font-size:13.5px; color:var(--muted); display:inline-flex; align-items:center; gap:7px; padding-top:3px; }
+    select { font-family:inherit; font-size:13.5px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:8px;
+      color:#ffffff; padding:6px 9px; cursor:pointer; }
+    select:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+    .ch-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:7px; vertical-align:middle; }
+    /* ── Content-Galerie: Beiträge mit Vorschau ── */
+    .content-tools { display:flex; align-items:center; gap:14px; margin:0 0 14px; flex-wrap:wrap; }
+    .report-bar { display:flex; align-items:center; gap:14px; margin-bottom:18px; flex-wrap:wrap; }
+    .pgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(216px,1fr)); gap:15px; }
+    .pcard { display:block; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;
+      box-shadow:var(--shadow); color:inherit; text-decoration:none; transition:.13s; }
+    .pcard:hover { border-color:rgba(255,255,255,0.3); transform:translateY(-2px); box-shadow:0 20px 48px rgba(0,0,0,0.45); }
+    .pcard:not([href]) { cursor:default; }
+    .pcard:not([href]):hover { transform:none; box-shadow:var(--shadow); border-color:var(--line); }
+    .pthumb { position:relative; aspect-ratio:4/3; background:rgba(255,255,255,0.06); }
+    .pthumb img { width:100%; height:100%; object-fit:cover; display:block; }
+    .pthumb .ph { width:100%; height:100%; display:grid; place-items:center; }
+    .pthumb .ph-ic { font-size:42px; filter:drop-shadow(0 2px 7px rgba(0,0,0,.3)); }
+    .pfmt { position:absolute; left:8px; top:8px; background:rgba(17,20,24,.6); color:#fff; font-size:11px; font-weight:600;
+      padding:3px 8px; border-radius:7px; }
+    .pthumb .tag-pill { position:absolute; right:8px; top:8px; margin:0; }
+    .pbody { padding:12px 13px 13px; }
+    .pcap { font-size:13.5px; font-weight:500; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+      overflow:hidden; min-height:37px; }
+    .pmeta { font-size:12px; color:var(--muted); margin-top:7px; display:flex; align-items:center; }
+    .pstats { display:grid; grid-template-columns:1fr 1fr; gap:7px 12px; margin-top:11px; padding-top:11px; border-top:1px solid var(--line); }
+    .pstats div { display:flex; flex-direction:column; }
+    .pstats b { font-size:15px; font-weight:700; letter-spacing:-.01em; }
+    .pstats small { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin-top:1px; }
+    /* Content-Tabelle: Bild-Vorschau- & Beschreibungsspalte */
+    td.td-thumb { width:54px; padding:6px 10px; }
+    .thumb-mini { display:grid; place-items:center; width:42px; height:42px; border-radius:8px; overflow:hidden; }
+    .thumb-mini img { width:100%; height:100%; object-fit:cover; }
+    .thumb-mini .ph-ic-sm { font-size:18px; filter:drop-shadow(0 1px 3px rgba(0,0,0,.3)); }
+    td.td-cap { max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); }
+
+    /* ── Setup-Assistent ── */
+    .overlay { position:fixed; inset:0; background:rgba(17,20,24,.45); backdrop-filter:blur(2px); display:none;
+      align-items:flex-start; justify-content:center; overflow:auto; padding:40px 16px; z-index:50; }
+    .overlay.open { display:flex; }
+    .wizard { background:var(--card); border-radius:18px; max-width:660px; width:100%; padding:30px; box-shadow:0 20px 60px rgba(16,24,40,.25); }
+    .wizard h2 { margin:0 0 4px; font-size:20px; }
+    .wizard ol { padding-left:8px; line-height:1.6; list-style:none; counter-reset:s; }
+    .wizard li { margin-bottom:11px; padding-left:36px; position:relative; }
+    .wizard li::before { counter-increment:s; content:counter(s); position:absolute; left:0; top:0;
+      width:24px; height:24px; background:var(--accent); color:#fff; border-radius:50%; font-size:12px; font-weight:700;
+      display:grid; place-items:center; }
+    .wizard code { background:rgba(255,255,255,0.1); color:#7dd3fc; padding:2px 6px; border-radius:5px; font-size:12.5px; }
+    .field { margin:14px 0; }
+    .field label { display:block; font-size:13px; color:var(--muted); margin-bottom:6px; font-weight:500; }
+    .field input { width:100%; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:10px; color:#ffffff;
+      padding:12px 13px; font-size:14px; font-family:inherit; }
+    .field input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+    .result { margin-top:14px; padding:12px 14px; border-radius:10px; font-size:14px; display:none; line-height:1.5; }
+    .result.ok { display:block; background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.3); color:#4ade80; }
+    .result.err { display:block; background:rgba(248,113,113,0.12); border:1px solid rgba(248,113,113,0.3); color:#f87171; }
+    .muted-box { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.14); border-radius:10px; padding:13px 15px; font-size:13px; color:rgba(255,255,255,0.85); margin:14px 0; line-height:1.5; }
+    .wizard-actions { display:flex; gap:10px; align-items:center; margin-top:4px; }
+
+    /* ── Schritt 4: Druck-Layout (PDF) ── */
+    .print-head { display:none; }
+    @media print {
+      /* Interactive controls, filters and sidebar hidden in print */
+      .sidebar, #export-bar, #channels, .seg, .info, .chips, select, #exp-mode, #exp-colpicker, .content-tools, .report-bar, #reminder, .overlay, .control-center, .metric-selector-panel { display:none !important; }
+      .app { display:block !important; }
+      .main { max-width:none !important; padding:0 !important; }
+      .topbar { margin:0 !important; }
+      .topbar h1 { font-size:18px !important; }
+      
+      .print-head { display:block !important; margin:0 0 12px !important; border-bottom:2px solid #cccccc !important; padding-bottom:8px !important; }
+      .print-head h2 { margin:0 !important; font-size:20px !important; color:#111418 !important; }
+      .print-head .sub { color:#555555 !important; font-size:12px !important; margin-top:2px !important; }
+      
+      .group-label { margin:16px 0 8px !important; color:#555555 !important; }
+      .grid { display:block !important; }
+      .grid .panel { margin-bottom:12px !important; }
+      
+      /* Reset layout cards to flat print style (black text on white page) */
+      .panel, .kpi, .pcard, .post, .summary-card, .empty-state {
+        break-inside:avoid; page-break-inside:avoid;
+        background:#ffffff !important;
+        color:#111418 !important;
+        border:1px solid #cccccc !important;
+        box-shadow:none !important;
+        -webkit-backdrop-filter:none !important;
+        backdrop-filter:none !important;
+        text-shadow:none !important;
+      }
+      
+      body {
+        background:#ffffff !important;
+        color:#111418 !important;
+      }
+      
+      .kpi .value, .panel h2, .summary-card h3, .empty-state h3, .post .num {
+        color:#111418 !important;
+      }
+      
+      .kpi .label, .summary-card .tip-text, .empty-state p, .hint, .post .tags, .post .num small {
+        color:#555555 !important;
+      }
+      
+      th, td {
+        border-bottom:1px solid #cccccc !important;
+        color:#111418 !important;
+      }
+      th {
+        color:#555555 !important;
+      }
+      
+      .topbar h1, #page-title {
+        -webkit-text-fill-color:initial !important;
+        color:#111418 !important;
+        background:none !important;
+      }
+      
+      a {
+        color:#0022aa !important;
+        text-decoration:underline !important;
+      }
+      
+      .kpis { gap:8px !important; }
+      
+      /* Clean canvas backdrop in print since ticks are now dark */
+      canvas {
+        max-width:100% !important;
+        height:auto !important;
+        background:#ffffff !important;
+        border-radius:12px !important;
+        padding:8px !important;
+        box-shadow:none !important;
+      }
+    }
+    @media (max-width:760px){
+      .app { flex-direction:column; }
+      .sidebar {
+        width:100%; height:auto; position:static;
+        flex-direction:row; align-items:center; justify-content:space-between;
+        flex-wrap:wrap; gap:12px; padding:12px 16px;
+      }
+      .brand { padding:0; }
+      .nav { flex-direction:row; flex:none; gap:6px; }
+      .nav button { width:auto; padding:8px 12px; font-size:13.5px; }
+      .side-foot { flex-direction:row; margin:0; padding:0; gap:8px; }
+      .side-foot .btn { padding:8px 12px; font-size:13px; }
+      .conn { display:none !important; }
+      .main { padding:16px 16px 32px; }
+    }
+
+    /* ── Analyst Summary Card Styling ── */
+    .summary-card {
+      display: flex; gap: 20px; align-items: stretch; margin-bottom: 24px;
+      padding: 24px; border-radius: var(--radius); border: 1px solid var(--glass-line);
+      background: linear-gradient(135deg, rgba(238, 243, 255, 0.65), rgba(255, 255, 255, 0.45));
+      box-shadow: var(--ring), var(--soft);
+    }
+    .summary-card .analyst-avatar {
+      width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #4f6bff, #7c5cff);
+      display: grid; place-items: center; font-size: 24px; box-shadow: 0 4px 12px rgba(79,107,255,0.3); flex-shrink: 0;
+    }
+    .summary-card .summary-content { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .summary-card h3 { margin: 0; font-size: 15px; font-weight: 700; color: #ffffff; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+    .summary-card h3 span.badge { font-size: 10px; font-weight: 700; text-transform: uppercase; background: rgba(88,117,255,0.25); border:1px solid rgba(88,117,255,0.4); color: #a3b8ff; padding: 2px 8px; border-radius: 99px; letter-spacing: 0.05em; }
+    .summary-card p.text { margin: 0; font-size: 14.5px; line-height: 1.6; color: #ffffff; }
+    .summary-card .tips-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; border-top: 1px solid rgba(120,130,170,0.16); padding-top: 16px; }
+    @media (max-width: 760px) {
+      .summary-card { flex-direction: column; gap: 14px; }
+      .summary-card .tips-grid { grid-template-columns: 1fr; }
+    }
+    .summary-card .tip-item { display: flex; gap: 10px; align-items: flex-start; }
+    .summary-card .tip-icon { font-size: 16px; flex-shrink: 0; padding-top: 2px; }
+    .summary-card .tip-text { font-size: 13px; line-height: 1.5; color: rgba(255,255,255,0.82); }
+    .summary-card .tip-text b { color: #ffffff; }
+
+    /* ── UX Redesign: Empty States ── */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 48px 32px; text-align: center; border-radius: var(--radius);
+      border: 1px dashed rgba(120, 130, 170, 0.4); background: rgba(255, 255, 255, 0.35);
+      margin: 20px 0; box-shadow: var(--soft);
+    }
+    .empty-state .es-icon { font-size: 48px; margin-bottom: 16px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.1)); }
+    .empty-state h3 { margin: 0 0 8px; font-size: 18px; font-weight: 700; color: #ffffff; }
+    .empty-state p { margin: 0 0 20px; font-size: 14px; color: rgba(255,255,255,0.8); max-width: 420px; line-height: 1.5; }
+    .empty-state .es-actions { display: flex; gap: 12px; }
+
+    /* ── UX Redesign: Funnel Headers ── */
+    .funnel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 32px 0 16px; font-size: 13.5px; font-weight: 700; color: #ffffff;
+      text-transform: uppercase; letter-spacing: .06em;
+      border-bottom: 2px solid rgba(79, 107, 255, 0.15); padding-bottom: 6px;
+    }
+    .funnel-header .funnel-step {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: linear-gradient(135deg, rgba(79, 107, 255, 0.1), rgba(124, 92, 255, 0.1));
+      color: var(--accent); padding: 3px 10px; border-radius: 6px; font-size: 11px;
+    }
+
+    /* ── UX Redesign: Sortable Table Headers ── */
+    th.sortable {
+      position: relative; transition: background-color 0.15s, color 0.15s;
+      user-select: none; cursor: pointer; padding-right: 22px !important;
+    }
+    th.sortable:hover {
+      background: rgba(79, 107, 255, 0.06); color: var(--text); border-radius: 6px;
+    }
+    th.sortable .sort-indicator {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      font-size: 10px; color: rgba(255, 255, 255, 0.55); font-weight: 400;
+      transition: color 0.15s;
+    }
+    th.sortable:hover .sort-indicator {
+      color: var(--accent);
+    }
+    th.sortable.active-sort {
+      color: var(--accent); font-weight: 700;
+    }
+    th.sortable.active-sort .sort-indicator {
+      color: var(--accent);
+    }
+
+    /* ── UX Redesign: Tooltip Popover Upgrades ── */
+    .info {
+      position: relative; display: inline-flex; align-items: center; justify-content: center;
+      width: 17px; height: 17px; border-radius: 50%; background: rgba(120, 130, 170, 0.14);
+      color: rgba(255, 255, 255, 0.75); font-size: 10px; font-weight: 700; font-style: normal;
+      cursor: help; flex-shrink: 0; transition: all 0.15s;
+    }
+    .info:hover, .info:focus {
+      background: linear-gradient(135deg, #4f6bff, #7c5cff); color: #fff;
+      box-shadow: 0 3px 8px rgba(79, 107, 255, 0.3); transform: scale(1.1);
+    }
+    .tip {
+      display: none; position: absolute; bottom: 140%; left: 50%; transform: translateX(-50%);
+      width: 250px; background: rgba(20, 24, 38, 0.95); -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px); color: #e2e8f0; padding: 14px; border-radius: 12px;
+      font-size: 12.5px; font-weight: 400; line-height: 1.5; border: 1px solid rgba(255,255,255,0.12);
+      text-align: left; text-transform: none; letter-spacing: 0;
+      box-shadow: 0 12px 30px rgba(10, 14, 28, 0.4); z-index: 50;
+    }
+    .tip::after {
+      content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+      border: 6px solid transparent; border-top-color: rgba(20, 24, 38, 0.95);
+    }
+    .tip b { display: block; margin-bottom: 4px; color: #fff; font-size: 13.5px; }
+    .tip .formula {
+      margin-top: 8px; padding: 6px 8px; background: rgba(255, 255, 255, 0.06);
+      border-radius: 6px; color: #7dd3fc; font-family: monospace; font-size: 11px;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+
+    /* ════════════════════════════════════════════════════════════════════ */
+       LIQUID GLASS 3.0 — Minimal Corporate UI (Frosted glass over sunset ambient backdrop)
+       ════════════════════════════════════════════════════════════════════ */
+    :root {
+      --bg: #f4f6fa;
+      --text: #1f2937;
+      --muted: #4b5563;
+      --line: rgba(0, 0, 0, 0.08);
+      --card: rgba(255, 255, 255, 0.65);
+      --accent: #3b82f6; --accent-2: #8b5cf6;
+      --accent-soft: rgba(59, 130, 246, 0.08);
+      --good: #16a34a; --bad: #dc2626;
+      --glass: rgba(255, 255, 255, 0.70);
+      --glass-strong: rgba(255, 255, 255, 0.85);
+      --glass-line: rgba(255, 255, 255, 0.5);
+      --ring: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+      --soft: 0 12px 32px rgba(31, 41, 55, 0.04), 0 2px 4px rgba(31, 41, 55, 0.02);
+      --radius: 24px;
+    }
+    body {
+      background: 
+        radial-gradient(circle at 15% 20%, rgba(98, 174, 255, 0.15) 0%, transparent 45%),
+        radial-gradient(circle at 80% 30%, rgba(192, 132, 252, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 50% 80%, rgba(45, 212, 191, 0.1) 0%, transparent 45%),
+        linear-gradient(135deg, #f4f6fa 0%, #ebf0f7 100%);
+      background-attachment: fixed;
+      color: #1f2937;
+    }
+    /* Dynamic Channel Glow Overlay Tints in Light Mode */
+    body[data-platform="instagram"] {
+      background: 
+        radial-gradient(circle at 85% 15%, rgba(220, 38, 185, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 15% 20%, rgba(98, 174, 255, 0.1) 0%, transparent 45%),
+        radial-gradient(circle at 50% 80%, rgba(45, 212, 191, 0.08) 0%, transparent 45%),
+        linear-gradient(135deg, #f4f6fa 0%, #ebf0f7 100%);
+      background-attachment: fixed;
+    }
+    body[data-platform="facebook"] {
+      background: 
+        radial-gradient(circle at 85% 15%, rgba(24, 119, 242, 0.1) 0%, transparent 45%),
+        radial-gradient(circle at 15% 20%, rgba(98, 174, 255, 0.1) 0%, transparent 45%),
+        radial-gradient(circle at 50% 80%, rgba(45, 212, 191, 0.08) 0%, transparent 45%),
+        linear-gradient(135deg, #f4f6fa 0%, #ebf0f7 100%);
+      background-attachment: fixed;
+    }
+    body[data-platform="youtube"] {
+      background: 
+        radial-gradient(circle at 85% 15%, rgba(225, 29, 72, 0.1) 0%, transparent 45%),
+        radial-gradient(circle at 15% 20%, rgba(98, 174, 255, 0.1) 0%, transparent 45%),
+        radial-gradient(circle at 50% 80%, rgba(45, 212, 191, 0.08) 0%, transparent 45%),
+        linear-gradient(135deg, #f4f6fa 0%, #ebf0f7 100%);
+      background-attachment: fixed;
+    }
+    /* Glas-Flächen */
+    .sidebar {
+      background: rgba(255, 255, 255, 0.45);
+      -webkit-backdrop-filter: blur(35px) saturate(150%); backdrop-filter: blur(35px) saturate(150%);
+      border-right: 1px solid rgba(255, 255, 255, 0.5); box-shadow: none;
+    }
+    .panel, .kpi, .conn, .pcard, .control-center {
+      background: var(--glass);
+      -webkit-backdrop-filter: blur(30px) saturate(150%); backdrop-filter: blur(30px) saturate(150%);
+      border: 1px solid var(--glass-line); box-shadow: var(--ring), var(--soft);
+    }
+    .kpi, .kpi.hero {
+      background: linear-gradient(158deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.5));
+      border-color: rgba(255, 255, 255, 0.5);
+      transition: transform .18s cubic-bezier(0.2, 0.8, 0.2, 1), border-color .18s, box-shadow .18s;
+    }
+    .kpi:hover, .pcard:hover {
+      background: linear-gradient(158deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.65));
+      border-color: rgba(255, 255, 255, 0.8);
+      transform: translateY(-3px);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 16px 36px rgba(31, 41, 55, 0.08);
+    }
+    /* Ambient platform color glow inside borders on focus/hover */
+    body[data-platform="instagram"] .kpi:hover { border-color: rgba(220, 38, 185, 0.45); }
+    body[data-platform="facebook"] .kpi:hover { border-color: rgba(24, 119, 242, 0.45); }
+    body[data-platform="youtube"] .kpi:hover { border-color: rgba(225, 29, 72, 0.45); }
+
+    .kpi .value { color: #111827 !important; font-size: 30px; }
+    .kpi .label { color: rgba(17, 24, 39, 0.75); }
+
+    .conn.live { background: linear-gradient(135deg, rgba(34,197,94,0.1), rgba(34,197,94,0.03)); border-color: rgba(34,197,94,0.3); color: #16a34a; }
+    .conn.warn { background: linear-gradient(135deg, rgba(249,115,22,0.1), rgba(249,115,22,0.03)); border-color: rgba(249,115,22,0.3); color: #ea580c; }
+    
+    .reminder {
+      background: linear-gradient(135deg, rgba(249,115,22,0.08), rgba(249,115,22,0.02));
+      border: 1px solid rgba(249,115,22,0.3);
+      color: #7c2d12;
+    }
+    .reminder .r-txt { color: #7c2d12; }
+    .reminder .r-txt b { color: #7c2d12; }
+
+    /* Marke & Titel */
+    .brand { color: #111827; font-weight: 700; letter-spacing: -0.01em; }
+    .topbar h1, #page-title {
+      color: #111827;
+      -webkit-text-fill-color: #111827;
+    }
+    /* Navigation */
+    .nav button { transition: background .15s, color .15s; color: #4b5563; }
+    .nav button:hover { background: rgba(0, 0, 0, 0.04); color: #111827; }
+    .nav button.active { background: rgba(59,130,246,0.12); color: #1d4ed8; box-shadow: none; border-left: 2px solid var(--accent); }
+    /* Buttons */
+    .btn {
+      background: rgba(255, 255, 255, 0.6);
+      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+      border: 1px solid rgba(0, 0, 0, 0.12); box-shadow: var(--ring);
+      color: #374151;
+      transition: all 0.15s;
+    }
+    .btn:hover { background: rgba(255, 255, 255, 0.85); border-color: rgba(0, 0, 0, 0.2); color: #111827; }
+    .btn.primary { background: linear-gradient(135deg, #3b82f6, #6366f1); border: none; color: #fff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); }
+    .btn.primary:hover { background: linear-gradient(135deg, #2563eb, #4f46e5); box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3); }
+    
+    /* Segmente, Chips, Selects */
+    .seg { background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0, 0, 0, 0.08); }
+    .seg button { color: #4b5563; transition: all 0.15s; }
+    .seg button:hover { color: #111827; }
+    .seg button.active { background: #ffffff; color: #111827; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .chips button { background: rgba(255, 255, 255, 0.6); border-color: rgba(0, 0, 0, 0.1); color: #4b5563; }
+    .chips button.active { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: #1d4ed8; font-weight: 600; }
+    
+    select {
+      background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(0, 0, 0, 0.1);
+      color: #1f2937; padding: 6px 12px; border-radius: 10px;
+    }
+    select option { background: #ffffff; color: #1f2937; }
+    .field input {
+      background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(0, 0, 0, 0.1);
+      color: #1f2937;
+    }
+    
+    /* Tabellen auf Glas */
+    th, td { border-bottom: 1px solid rgba(0, 0, 0, 0.06); color: #1f2937; }
+    th { color: #374151; font-weight: 700; }
+    tbody tr:hover { background: rgba(0, 0, 0, 0.02); }
+    .post { background: rgba(255, 255, 255, 0.4); border: 1px solid rgba(0, 0, 0, 0.06); color: #1f2937; }
+    
+    /* Setup-Assistent */
+    .overlay { background: rgba(31, 41, 55, 0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+    .wizard {
+      background: rgba(255, 255, 255, 0.85);
+      -webkit-backdrop-filter: blur(35px) saturate(150%); backdrop-filter: blur(35px) saturate(150%);
+      border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: var(--ring), 0 20px 60px rgba(0, 0, 0, 0.08);
+      color: #1f2937;
+    }
+    .wizard h2 { color: #111827; }
+    .wizard code { background: rgba(59, 130, 246, 0.08); color: #2563eb; }
+    .muted-box { background: rgba(0, 0, 0, 0.02); border-color: rgba(0, 0, 0, 0.06); color: #4b5563; }
+    .wizard-actions .btn { color: #374151; }
+
+    .summary-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.5));
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      color: #1f2937;
+    }
+    .summary-card h3 { color: #111827 !important; }
+    .summary-card h3 span.badge { background: rgba(59, 130, 246, 0.1); color: #2563eb; border-color: rgba(59, 130, 246, 0.2); }
+    .summary-card p.text { color: #1f2937 !important; }
+    .summary-card .tip-text { color: #374151; }
+    .summary-card .tip-text b { color: #111827; }
+
+    .empty-state {
+      background: rgba(255, 255, 255, 0.4) !important;
+      border: 1px dashed rgba(0, 0, 0, 0.15) !important;
+    }
+    .empty-state h3 { color: #111827 !important; }
+    .empty-state p { color: #4b5563 !important; }
+
+    /* Clean logo and format badges overrides */
+    .brand .logo {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+      display: inline-block;
+    }
+    .funnel-header .funnel-step {
+      background: rgba(0, 0, 0, 0.04);
+      color: #374151;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .pthumb .ph-ic {
+      font-size: 36px; font-weight: 800; color: #1f2937;
+      font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.05em; filter: none !important;
+    }
+    .thumb-mini .ph-ic-sm {
+      font-size: 14px; font-weight: 800; color: #1f2937;
+      font-family: 'Plus Jakarta Sans', sans-serif; filter: none !important;
+    }
+    .funnel-header {
+      color: #111827 !important;
+      border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+    }
+    a {
+      color: #2563eb !important;
+      transition: color 0.15s;
+    }
+    a:hover {
+      color: #1d4ed8 !important;
+      text-decoration: underline !important;
+    }
+
+    /* Karten-Hover etwas lebendiger */
+    .pcard:hover { box-shadow: var(--ring), 0 24px 50px rgba(0, 0, 0, 0.45); }
+
+    /* Drag & Drop für KPI-Karten */
+    .kpi {
+      cursor: grab;
+      user-select: none;
+      transition: transform 0.15s cubic-bezier(0.22,1,0.36,1), box-shadow 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+    }
+    .kpi:active {
+      cursor: grabbing;
+    }
+    .kpi.dragging {
+      opacity: 0.4;
+      border: 2px dashed var(--accent) !important;
+      background: rgba(59, 130, 246, 0.05) !important;
+      transform: scale(0.97);
+    }
+    .kpi.drag-over {
+      border: 2px solid var(--accent) !important;
+      transform: scale(1.025);
+      box-shadow: 0 8px 28px rgba(47, 107, 255, 0.18) !important;
+      background: rgba(47, 107, 255, 0.04) !important;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       POLISH LAYER — Animations, Typography, Spacing
+       ══════════════════════════════════════════════════════════ */
+
+    /* ── Fade-Up Transition (Tab-Wechsel) ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeUp 0.2s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+    /* ── KPI Counter (Zahlen zählen nach oben) ── */
+    @keyframes kpiPop {
+      from { opacity: 0; transform: scale(0.92) translateY(4px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .kpi .value { animation: kpiPop 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    .kpi:nth-child(1) .value { animation-delay: 0.04s; }
+    .kpi:nth-child(2) .value { animation-delay: 0.08s; }
+    .kpi:nth-child(3) .value { animation-delay: 0.12s; }
+    .kpi:nth-child(4) .value { animation-delay: 0.16s; }
+    .kpi:nth-child(5) .value { animation-delay: 0.20s; }
+    .kpi:nth-child(6) .value { animation-delay: 0.24s; }
+
+    /* ── prefers-reduced-motion safety ── */
+    @media (prefers-reduced-motion: reduce) {
+      .fade-in, .kpi .value { animation: none !important; }
+    }
+
+    /* ── Sidebar: Trennlinie + Marken-Verfeinerung ── */
+    .brand {
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      margin-bottom: 8px;
+      padding-bottom: 18px !important;
+    }
+    .brand .logo {
+      width: 28px !important; height: 28px !important; border-radius: 8px !important;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2) !important;
+      display: grid !important; place-items: center !important;
+      font-size: 12px; font-weight: 800; color: #fff;
+    }
+    .brand span.logo::after { content: "R"; }
+    .side-foot {
+      border-top: 1px solid rgba(0,0,0,0.06);
+      padding-top: 16px;
+      gap: 10px;
+    }
+
+    /* ── Panel h2: uppercase label-style ── */
+    .panel h2 {
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.08em !important;
+      color: #4b5563 !important;
+      margin: 0 0 18px !important;
+    }
+    .panel h2 .hint {
+      font-size: 11px;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 400;
+    }
+
+    /* ── Group labels ── */
+    .group-label {
+      font-size: 10px !important;
+      font-weight: 700 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.1em !important;
+      color: #4b5563 !important;
+      margin: 32px 0 14px !important;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .group-label::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: rgba(0,0,0,0.06);
+    }
+
+    /* ── Hint text ── (lesbarer: 13px + dunkleres Grau für WCAG-AA) */
+    .hint { color: #4b5563 !important; font-size: 13px; }
+
+    /* ── KPI card: tighter corporate feel ── */
+    .kpi {
+      padding: 18px 20px !important;
+      border-radius: 16px !important;
+    }
+    .kpi .label {
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.06em !important;
+      color: #4b5563 !important;
+    }
+
+    /* ── Section title polish ── */
+    .section-title {
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.08em !important;
+      color: #4b5563 !important;
+      margin: 32px 0 14px !important;
+    }
+
+    /* ── Funnel header ── */
+    .funnel-header {
+      font-size: 10px !important;
+      letter-spacing: 0.1em !important;
+    }
+
+    /* ── Table active sort: accent underline ── */
+    th.sortable.active-sort {
+      color: #111827 !important;
+      border-bottom: 2px solid var(--accent) !important;
+    }
+
+    /* ── Subtle panel inner padding ── */
+    .panel { padding: 22px 24px !important; border-radius: 20px !important; }
+
+    /* ── Main area top spacing ── */
+    .main { padding: 28px 36px 56px !important; }
+    @media (max-width: 880px) { .main { padding: 20px 20px 40px !important; } }
+    @media (max-width: 760px) { .main { padding: 16px 16px 32px !important; } }
+
+    /* ── KPI grid spacing ── */
+    .kpis { gap: 12px !important; }
+    .grid { gap: 14px !important; margin-top: 14px !important; }
+
+    /* ── Hero-Überblick: wenige große Karten oben ── */
+    .kpis.hero-row { grid-template-columns: repeat(auto-fit, minmax(205px, 1fr)) !important; gap: 16px !important; align-items: start !important; }
+    .kpis.hero-row .kpi { padding: 16px 18px !important; }
+    /* ── Restliche Kennzahlen: kompakter, treten zurück ── */
+    .kpis.secondary { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important; gap: 12px !important; align-items: start !important; }
+    .kpis.secondary .kpi { padding: 13px 15px !important; }
+    .kpis.secondary .kpi .label { font-size: 11px !important; }
+
+    /* ── PREMIUM LIGHT-MODE VISUAL POLISH OVERRIDES ── */
+
+    /* 1. Glassmorphism Variables Upgrade */
+    :root {
+      /* Subtle dark border outline to define edges on light backgrounds */
+      --glass-line: rgba(31, 41, 55, 0.08);
+      
+      /* Multi-layered inset highlights for optical light refraction */
+      --ring: inset 0 1px 0 0 rgba(255, 255, 255, 0.8), inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+      
+      /* Rich, multi-layered natural ambient drop shadows */
+      --soft: 0 1px 2px rgba(31, 41, 55, 0.01),
+              0 8px 16px rgba(31, 41, 55, 0.03),
+              0 16px 32px rgba(31, 41, 55, 0.03),
+              0 24px 48px rgba(31, 41, 55, 0.02);
+      
+      --radius: 24px;
+    }
+
+    /* 2. Increased Blur & Saturation */
+    .sidebar {
+      background: rgba(255, 255, 255, 0.45);
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      backdrop-filter: blur(40px) saturate(180%);
+    }
+    .panel, .kpi, .conn, .pcard, .control-center {
+      background: rgba(255, 255, 255, 0.70);
+      -webkit-backdrop-filter: blur(35px) saturate(160%);
+      backdrop-filter: blur(35px) saturate(160%);
+    }
+
+    /* 3. WCAG AA Contrast Compliance Overrides */
+    
+    /* Connection dialog result boxes (Success & Error alerts) */
+    .result.ok {
+      background: rgba(22, 163, 74, 0.08);
+      border: 1px solid rgba(22, 163, 74, 0.25);
+      color: #15803d !important; /* Rich High-Contrast Green (Contrast > 5.5:1) */
+      font-weight: 600;
+    }
+    .result.err {
+      background: rgba(220, 38, 38, 0.08);
+      border: 1px solid rgba(220, 38, 38, 0.25);
+      color: #b91c1c !important; /* Rich High-Contrast Red (Contrast > 6.0:1) */
+      font-weight: 600;
+    }
+
+    /* Table sort arrow indicators */
+    th.sortable .sort-indicator {
+      color: rgba(31, 41, 55, 0.4) !important; /* Dark neutral semi-transparent grey */
+    }
+    th.sortable:hover .sort-indicator,
+    th.sortable.active-sort .sort-indicator {
+      color: var(--accent) !important;
+    }
+
+    /* Empty State SVGs */
+    .empty-state .es-icon svg {
+      color: rgba(31, 41, 55, 0.35) !important;
+    }
+
+    /* Reminder Banner Close Button */
+    .reminder .r-x {
+      color: rgba(124, 45, 18, 0.6) !important; /* Dark orange/brown semi-transparent */
+    }
+    .reminder .r-x:hover {
+      color: #7c2d12 !important;
+    }
+
+    /* Post Tag Pills */
+    .tag-pill.paid {
+      background: rgba(249, 115, 22, 0.08) !important;
+      border: 1px solid rgba(249, 115, 22, 0.2) !important;
+      color: #c2410c !important; /* Saturated Orange (Contrast > 4.5:1) */
+    }
+    .tag-pill.organic {
+      background: rgba(59, 130, 246, 0.08) !important;
+      border: 1px solid rgba(59, 130, 246, 0.2) !important;
+      color: #1d4ed8 !important; /* Saturated Blue (Contrast > 5.0:1) */
+    }
+
+    /* 4. Motion and Modal Animations Polish */
+    
+    /* Tab Transitions: Smooth spring-like curve */
+    .fade-in {
+      animation: fadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* KPI counter animation pop */
+    .kpi .value {
+      animation: kpiPop 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* Smooth float on card hover */
+    .kpi, .kpi.hero {
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                  border-color 0.35s,
+                  box-shadow 0.35s;
+    }
+
+    /* Wizard Overlay / Modal Spring Easing */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(31, 41, 55, 0.3);
+      backdrop-filter: blur(0px);
+      opacity: 0;
+      visibility: hidden;
+      display: flex !important; /* Keep as flex, manage visibility instead */
+      align-items: flex-start; justify-content: center;
+      overflow: auto; padding: 40px 16px; z-index: 50;
+      transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                  visibility 0.35s,
+                  backdrop-filter 0.35s;
+    }
+    .overlay.open {
+      opacity: 1;
+      visibility: visible;
+      backdrop-filter: blur(12px);
+    }
+    .wizard {
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 24px;
+      max-width: 660px; width: 100%; padding: 32px;
+      box-shadow: var(--ring), 0 20px 60px rgba(0, 0, 0, 0.08);
+      transform: scale(0.92) translateY(20px);
+      transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .overlay.open .wizard {
+      transform: scale(1) translateY(0);
+    }
+    /* Multi-Metric Checkbox Panel */
+    .metric-selector-panel {
+      flex: 1 1 200px;       /* schlank neben dem Chart, wächst aber, wenn es darunter umbricht */
+      min-width: 180px;
+      background: rgba(255, 255, 255, 0.45);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 14px;
+      padding: 12px;
+      max-height: 340px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 6px 14px;
+      align-content: start;
+    }
+    @media (max-width: 640px) {
+      .metric-selector-panel {
+        width: 100% !important;
+        max-height: 200px;
+      }
+    }
+
+    /* ── Endpoints-Seite ── */
+    .ep-group { margin-top: 16px; }
+    .ep-row { padding: 12px 0; border-top: 1px solid rgba(120,130,170,0.14); }
+    .ep-row:first-of-type { border-top: none; }
+    .ep-label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+    .ep-input {
+      width: 100%; box-sizing: border-box; padding: 9px 11px; font-size: 13.5px;
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+      border: 1px solid var(--line, #d7dbe6); border-radius: 10px; background: var(--card, #fff);
+      color: var(--text, #1b2440);
+    }
+    .ep-input:focus { outline: none; border-color: var(--accent, #4f6bff); box-shadow: 0 0 0 3px rgba(79,107,255,0.15); }
+    .ep-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 5px; }
+    .ep-hint { font-size: 12.5px; color: var(--muted, #6b7493); overflow-wrap: anywhere; }
+    .ep-default { font-size: 12.5px; color: var(--muted, #6b7493); min-width: 0; overflow-wrap: anywhere; }
+    .ep-default code { font-family: ui-monospace, Consolas, monospace; overflow-wrap: anywhere; word-break: break-word; }
+    .ep-badge { font-size: 11px; font-weight: 700; color: #b45309; background: rgba(245,158,11,0.16); padding: 1px 7px; border-radius: 999px; vertical-align: middle; }
+    .ep-savebar { margin-top: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; position: sticky; bottom: 12px; }
+    .ep-feedback { margin-left: 4px; }
+    /* ── Doku-Seite ── */
+    .doku { margin-top: 16px; line-height: 1.6; }
+    .doku:first-of-type { margin-top: 0; }
+    .doku h2 { margin-bottom: 6px; }
+    .doku ul, .doku ol { margin: 8px 0; padding-left: 22px; }
+    .doku ul ul { margin: 4px 0; }
+    .doku li { margin: 4px 0; }
+    .doku code { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; background: rgba(120,130,170,0.12); padding: 1px 5px; border-radius: 5px; }
+
+    /* ═══════════════════════════════════════════════════════════════════════
+       FLAT & RUHIG — radikales Redesign: Liquid-Glass komplett entfernt.
+       Flache weiße Flächen, EIN Akzent-Blau, Farbe nur für Bedeutung.
+       Dieser Block steht bewusst zuletzt und gewinnt damit die Kaskade.
+       ═══════════════════════════════════════════════════════════════════════ */
+    :root {
+      --bg:#e8eaf0 !important; --card:#ffffff !important;
+      --glass:#ffffff !important; --glass-strong:#ffffff !important; --glass-line:#d3d8e1 !important;
+      --line:#d3d8e1 !important;
+      --accent:#2f6bff !important; --accent-2:#2f6bff !important; --accent-soft:rgba(47,107,255,0.10) !important;
+      --ring:none !important; --soft:0 1px 2px rgba(16,24,40,.06), 0 4px 12px rgba(16,24,40,.06) !important; --radius:16px !important;
+    }
+    /* Ruhiger, flacher Hintergrund — keine farbigen Blobs mehr */
+    body,
+    body[data-platform="instagram"], body[data-platform="facebook"], body[data-platform="youtube"] {
+      background:#e8eaf0 !important; background-image:none !important;
+    }
+    /* Glas-Blur überall aus (auch fürs Screenshot-Tool) */
+    .sidebar, .panel, .kpi, .kpi.hero, .conn, .pcard, .control-center,
+    .btn, .wizard, .overlay, .overlay.open, .summary-card, .tip {
+      -webkit-backdrop-filter:none !important; backdrop-filter:none !important;
+    }
+    /* Flache weiße Flächen mit dünner Linie statt Glas + Schatten */
+    .sidebar { background:#ffffff !important; border-right:1px solid var(--line) !important; box-shadow:none !important; }
+    .panel, .control-center, .pcard, .summary-card {
+      background:#ffffff !important; border:1px solid var(--line) !important; box-shadow:var(--soft) !important;
+    }
+    .kpi { background:#ffffff !important; border:1px solid var(--line) !important; box-shadow:var(--soft) !important; }
+    .kpi.hero { background:#e9f1ff !important; border:1px solid #bcd4ff !important; }
+    .kpi:hover, .pcard:hover { background:#ffffff !important; border-color:#aeb6c4 !important; transform:none !important; box-shadow:0 4px 14px rgba(16,24,40,.10) !important; }
+    /* Hover-Rahmen-Tönungen (waren teils pink) neutralisieren */
+    body[data-platform="instagram"] .kpi:hover,
+    body[data-platform="facebook"] .kpi:hover,
+    body[data-platform="youtube"] .kpi:hover { border-color:#cfd4dc !important; }
+    /* Buttons flach, ein Akzent */
+    .btn { background:#ffffff !important; border:1px solid var(--line) !important; box-shadow:none !important; color:#374151 !important; }
+    .btn:hover { background:#f3f4f6 !important; border-color:#cfd4dc !important; }
+    .btn.primary { background:#2f6bff !important; border:1px solid #2f6bff !important; color:#fff !important; box-shadow:none !important; }
+    .btn.primary:hover { background:#255ae0 !important; border-color:#255ae0 !important; box-shadow:none !important; }
+    /* Setup-Dialog flach */
+    .overlay { background:rgba(17,20,24,.45) !important; }
+    .wizard { background:#ffffff !important; border:1px solid var(--line) !important; box-shadow:0 20px 60px rgba(16,24,40,.18) !important; }
+    /* Lila/Pink-Verläufe → solides Akzent-Blau */
+    .summary-card .analyst-avatar, .brand .logo { background:#2f6bff !important; box-shadow:none !important; }
+    .info:hover, .info:focus { background:#2f6bff !important; }
+    .funnel-header { background:transparent !important; }
+    .nav button.active { background:rgba(47,107,255,0.10) !important; color:#1d4ed8 !important; border-left:2px solid var(--accent) !important; }
+    .chips button.active { background:rgba(47,107,255,0.10) !important; border-color:rgba(47,107,255,0.35) !important; color:#1d4ed8 !important; }
+    /* Status-Chip „Nicht verbunden": war helle Schrift auf Weiß = unsichtbar */
+    .conn:not(.live):not(.warn) { background:#f2f4f7 !important; color:#5b6470 !important; border:1px solid var(--line) !important; }
+    .conn:not(.live):not(.warn) b { color:#14161a !important; }
+
+    /* ── Ruhige, einheitliche Typografie: KEINE Großschrift mehr ── */
+    .panel h2, .section-title, .group-label,
+    .funnel-header, .funnel-header span,
+    .kpi .label, th {
+      text-transform:none !important; letter-spacing:normal !important;
+    }
+    .section-title, .group-label { font-size:13px !important; font-weight:600 !important; color:#5b6470 !important; }
+    .panel h2 { font-size:14px !important; font-weight:600 !important; color:#14161a !important; }
+    .funnel-header > span:first-child { font-size:13px !important; font-weight:600 !important; color:#5b6470 !important; }
+    .funnel-header .funnel-step { font-size:12px !important; font-weight:500 !important; color:#8b93a1 !important; }
+    .kpi .label { font-size:12px !important; font-weight:500 !important; color:#5b6470 !important; }
+    th { font-size:12px !important; font-weight:600 !important; color:#5b6470 !important; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Seitenleiste -->
+    <aside class="sidebar">
+      <div class="brand"><span class="logo"></span> Reporting</div>
+      <nav class="nav">
+        <button data-tab="report" class="active" aria-current="page">Report</button>
+        <button data-tab="explorer">Explorer</button>
+        <button data-tab="endpoints">Endpoints</button>
+        <button data-tab="doku">Doku</button>
+      </nav>
+      <div class="side-foot">
+        <div class="conn" id="conn">lädt…</div>
+        <div class="conn" id="collect-status" style="display:none"></div>
+        <button class="btn" id="btn-settings">Verbindung</button>
+        <button class="btn primary" id="btn-refresh">Daten aktualisieren</button>
+      </div>
+    </aside>
+
+    <!-- Hauptbereich -->
+    <main class="main">
+      <div class="print-head" id="print-head"></div>
+      <div id="reminder"></div>
+      <div id="token-banner"></div>
+      <!-- Unified Control Center (Liquid Glass style) -->
+      <div class="control-center panel" id="control-center" style="margin-bottom: 24px; display: flex; flex-direction: column; gap: 16px; padding: 22px 24px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+          <h1 id="page-title" style="margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.01em;">Wochenreport</h1>
+          <div class="export" id="export-bar">
+            <button class="btn" data-exp="csv" title="Als Excel/CSV speichern">Excel</button>
+            <button class="btn" data-exp="pdf" title="Als PDF speichern (Drucken → „Als PDF speichern“)">PDF</button>
+            <button class="btn" data-exp="ppt" title="Als PowerPoint speichern">PowerPoint</button>
+          </div>
+        </div>
+        
+        <div id="control-bar" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; border-top: 1px solid rgba(120, 130, 170, 0.12); padding-top: 14px;">
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <!-- Granularität -->
+            <div class="seg" id="gran-seg">
+              <button data-gran="week">Woche</button>
+              <button data-gran="month">Monat</button>
+              <button data-gran="quarter">Quartal</button>
+            </div>
+            <!-- Kanäle -->
+            <div class="seg" id="channels"></div>
+          </div>
+          
+          <!-- Zeitraum-Auswahl -->
+          <div id="period-selector-wrapper" style="display: flex; align-items: center; gap: 8px;">
+            <span class="exp-range" style="font-weight: 500; font-size: 13.5px; color: var(--text);">Zeitraum:</span>
+            <select id="period-sel" style="min-width: 160px; font-weight: 600;"></select>
+          </div>
+        </div>
+      </div>
+      <div id="content"></div>
+    </main>
+  </div>
+
+  <!-- Setup-Assistent -->
+  <div class="overlay" id="overlay">
+    <div class="wizard">
+      <h2>Verbindung einrichten</h2>
+      <p class="hint">Einmalig. Danach holt das Dashboard die Daten auf Knopfdruck. Stand-API: <b>v25.0</b>.</p>
+      <ol>
+        <li><b>Instagram = Business-Konto</b> und mit deiner <b>Facebook-Seite</b> verbunden (Instagram → Einstellungen → Verknüpfte Konten).</li>
+        <li>Öffne den <a href="https://developers.facebook.com/tools/explorer" target="_blank" rel="noopener">Graph API Explorer</a>, App wählen → <b>„Generate Access Token"</b>. Rechte: <code>pages_read_engagement</code>, <code>pages_show_list</code>, <code>instagram_basic</code>, <code>instagram_manage_insights</code>, <code>read_insights</code>.</li>
+        <li><b>Page-ID:</b> Abfrage <code>me/accounts</code> ausführen → bei deiner Seite steht <code>"id"</code>.</li>
+        <li><b>Page-Token:</b> In derselben Antwort steht pro Seite ein <code>"access_token"</code> — kopieren.</li>
+        <li>Beides unten einfügen und <b>„Verbinden & Testen"</b> klicken.</li>
+      </ol>
+      <div class="muted-box">Für einen Token, der nicht abläuft: <a href="https://business.facebook.com/settings/system-users" target="_blank" rel="noopener">Business Manager → Systembenutzer</a>. Details in <code>ENDPOINTS.md</code>.</div>
+      <div class="field"><label>Page-ID</label><input id="in-pageid" placeholder="z. B. 102938475610293" autocomplete="off" /></div>
+      <div class="field"><label>Page-Token (Access Token)</label><input id="in-token" placeholder="EAAB… (langer Schlüssel)" autocomplete="off" /></div>
+      <div class="wizard-actions">
+        <button class="btn primary" id="btn-connect">Verbinden & Testen</button>
+        <button class="btn" id="btn-close">Erstmal Demo ansehen</button>
+      </div>
+      <div class="result" id="connect-result"></div>
+    </div>
+  </div>
+
+  <script src="/metrics.js"></script>
+  <script>
+    const S = { data:null, posts:null, status:null, channel:"instagram", tab:"report", gran:"week", period:null, curLabel:"", chartById:{},
+      cmp:["reach","erReach"], splitMetric:"views", splitType:"stacked", weekSort:{key:"kw",dir:"desc"},
+      monthCmp:["reach","erReach"], monthSplit:"views", monthSplitType:"stacked", monthSort:{key:"_label",dir:"desc"},
+      quarterMetric:"views", quarterSort:{key:"_label",dir:"desc"}, quarterChSort:{key:"reach",dir:"desc"}, qChannel:"all",
+      formatMetric:"er",
+      exp:{ channels:null, metrics:["reach","views","interactions","erReach"], chartMetrics:["reach"],
+            dateFrom:null, dateTo:null, sort:{key:"kw",dir:"asc"}, csort:{key:"date",dir:"asc"}, tableMode:"page",
+            contentView:"gallery", gsort:"er",
+            ccols:["thumb","date","channel","type","art","caption","views","reach","er"] } };
+
+    // Metric order initialization for Drag & Drop
+    S.metricOrder = null;
+    try {
+      const saved = localStorage.getItem("sm-metric-order");
+      if (saved) S.metricOrder = JSON.parse(saved);
+    } catch(e) {}
+    if (!S.metricOrder || !Array.isArray(S.metricOrder)) {
+      S.metricOrder = [
+        "reach", "views", "interactions", "erReach", "erFollower", "saves", "shares",
+        "linkTapRate", "profileViews", "followersTotal", "followersGained", "growthRate", "reachRate"
+      ];
+    }
+    const TITLES = { week:"Wochenreport", month:"Monatsreport", quarter:"Quartalsreport", explorer:"Explorer" };
+    const sum = o => o ? o.organic + o.paid : 0;
+    const fmt = n => (n==null || isNaN(n)) ? "–" : Math.round(n).toLocaleString("de-DE");
+    const pct = v => (v==null || isNaN(v)) ? "–" : v.toFixed(1).replace(".",",")+"%";
+    const NAMES = { instagram:"Instagram", facebook:"Facebook", youtube:"YouTube" };
+    const MONTHS = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+    const $ = id => document.getElementById(id);
+    const killCharts = () => { Object.values(S.chartById).forEach(c=>c.destroy()); S.chartById = {}; };
+
+    // Chart.js globale Defaults: Figtree-Font + dezente helle Grid-Linien
+    (function applyChartDefaults() {
+      if (typeof Chart === 'undefined') return;
+      Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif";
+      Chart.defaults.font.size = 12;
+      Chart.defaults.color = "#1f2937";
+      Chart.defaults.animation.duration = 500;
+      Chart.defaults.plugins.legend.labels.color = "#1f2937";
+      Chart.defaults.plugins.legend.labels.boxWidth = 10;
+      Chart.defaults.plugins.legend.labels.boxHeight = 10;
+      Chart.defaults.plugins.legend.labels.borderRadius = 3;
+      Chart.defaults.plugins.legend.labels.usePointStyle = false;
+      Chart.defaults.scale.grid.color = "rgba(17, 24, 39, 0.08)";
+      Chart.defaults.scale.ticks.color = "#374151";
+      Chart.defaults.scale.border.color = "transparent";
+      Chart.defaults.plugins.tooltip.backgroundColor = "rgba(17, 24, 38, 0.95)";
+      Chart.defaults.plugins.tooltip.titleColor = "#ffffff";
+      Chart.defaults.plugins.tooltip.bodyColor = "#ffffff";
+      Chart.defaults.plugins.tooltip.titleFont = { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" };
+      Chart.defaults.plugins.tooltip.bodyFont = { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" };
+      Chart.defaults.plugins.tooltip.cornerRadius = 10;
+      Chart.defaults.plugins.tooltip.padding = 12;
+      Chart.defaults.plugins.tooltip.usePointStyle = true;
+      Chart.defaults.plugins.tooltip.boxPadding = 6;
+      Chart.defaults.plugins.tooltip.displayColors = true;
+    })();
+
+    // Generiert eine dynamische, verständliche Kurzanalyse für den Analysten-Block
+    function generateAnalystSummary(c, p, periodKey) {
+      if (!c) return "Keine Daten für eine Analyse vorhanden.";
+      const label = S.gran === "week" ? "dieser Woche" : S.gran === "month" ? "diesem Monat" : "diesem Quartal";
+      const chanName = S.gran === "quarter" ? (S.qChannel === "all" ? "deiner Kanäle" : NAMES[S.qChannel]) : (NAMES[S.channel] || "deines Kanals");
+      
+      let text = `Die Gesamtperformance ${chanName} in ${label} zeigt `;
+      
+      const reachVal = c.reach || 0;
+      const reachPrev = p?.reach || 0;
+      const reachPct = reachPrev ? Math.round(((reachVal - reachPrev) / reachPrev) * 100) : 0;
+      
+      if (reachPrev) {
+        text += `eine Reichweite von <b>${fmt(reachVal)} Betrachtern</b> (${reachPct >= 0 ? "+" : ""}${reachPct}% im Vergleich zur Vorperiode). `;
+      } else {
+        text += `eine Reichweite von <b>${fmt(reachVal)} Betrachtern</b>. `;
+      }
+      
+      const erVal = c.erReach || 0;
+      const erPrev = p?.erReach || 0;
+      const erDiff = erPrev ? (erVal - erPrev).toFixed(1).replace(".", ",") : null;
+      
+      text += `Die Engagement-Qualität (ER Reichweite) liegt bei <b>${erVal.toFixed(1).replace(".", ",")}%</b>`;
+      if (erDiff) {
+        text += ` (${parseFloat(erDiff) >= 0 ? "+" : ""}${erDiff} Prozentpunkte)`;
+      }
+      text += `. `;
+      
+      const posts = S.posts?.posts || [];
+      const ch = S.channel;
+      
+      let periodPosts = [];
+      if (S.gran === "week" && periodKey) {
+        periodPosts = posts.filter(x => x.channel === ch && x.date >= periodKey && x.date <= addDays(periodKey, 6));
+      } else if (S.gran === "month" && periodKey) {
+        periodPosts = posts.filter(x => x.channel === ch && x.date.slice(0, 7) === periodKey);
+      } else if (S.gran === "quarter" && periodKey) {
+        const [yr, qStr] = periodKey.split("-Q");
+        const qNum = parseInt(qStr);
+        const startMonth = (qNum - 1) * 3 + 1;
+        const endMonth = qNum * 3;
+        const fromDate = `${yr}-${String(startMonth).padStart(2,"0")}-01`;
+        const toDate = qNum === 4 ? `${yr}-12-31` : `${yr}-${String(endMonth + 1).padStart(2,"0")}-01`;
+        const activeChans = S.qChannel === "all" ? Object.keys(S.data.weeks[0].channels) : [S.qChannel];
+        periodPosts = posts.filter(x => activeChans.includes(x.channel) && x.date >= fromDate && (qNum === 4 ? x.date <= toDate : x.date < toDate));
+      }
+      
+      if (periodPosts.length > 0) {
+        const sorted = periodPosts.map(p => {
+          const r = sum(p.reach);
+          return { ...p, er: r ? p.interactions / r * 100 : 0 };
+        }).sort((a, b) => b.er - a.er);
+        
+        const bestPost = sorted[0];
+        if (bestPost && bestPost.er > 0) {
+          text += `Herausragender Beitrag war <b>„${escHtml(bestPost.caption.slice(0, 30))}...“</b> (Format: ${bestPost.type}) mit einer exzellenten Engagement-Rate von <b>${bestPost.er.toFixed(1).replace(".", ",")}%</b>.`;
+        }
+      } else {
+        const totalInt = c.interactions || 0;
+        const totalIntPrev = p?.interactions || 0;
+        const intPct = totalIntPrev ? Math.round(((totalInt - totalIntPrev) / totalIntPrev) * 100) : 0;
+        if (totalIntPrev) {
+          text += `Es wurden insgesamt <b>${fmt(totalInt)} Interaktionen</b> generiert (${intPct >= 0 ? "+" : ""}${intPct}% zum Vorzeitraum).`;
+        } else {
+          text += `Es wurden insgesamt <b>${fmt(totalInt)} Interaktionen</b> generiert.`;
+        }
+      }
+      
+      return text;
+    }
+
+    // Generiert 2 konkrete und datengestützte Tipps für die Sidebar im Analysten-Block
+    function generateAnalystTips(c, p, periodKey) {
+      if (!c) return [];
+      const tips = [];
+      const activeCh = (S.gran === "quarter" && S.qChannel) ? S.qChannel : S.channel;
+      const posts = S.posts?.posts || [];
+      
+      const chPosts = activeCh === "all" ? posts : posts.filter(x => x.channel === activeCh);
+      
+      let periodPosts = [];
+      if (S.gran === "week" && periodKey) {
+        periodPosts = chPosts.filter(x => x.date >= periodKey && x.date <= addDays(periodKey, 6));
+      } else if (S.gran === "month" && periodKey) {
+        periodPosts = chPosts.filter(x => x.date.slice(0, 7) === periodKey);
+      } else if (S.gran === "quarter" && periodKey) {
+        const [yr, qStr] = periodKey.split("-Q");
+        const qNum = parseInt(qStr);
+        const startMonth = (qNum - 1) * 3 + 1;
+        const endMonth = qNum * 3;
+        const fromDate = `${yr}-${String(startMonth).padStart(2,"0")}-01`;
+        const toDate = qNum === 4 ? `${yr}-12-31` : `${yr}-${String(endMonth + 1).padStart(2,"0")}-01`;
+        periodPosts = chPosts.filter(x => x.date >= fromDate && (qNum === 4 ? x.date <= toDate : x.date < toDate));
+      }
+      
+      const targetPosts = periodPosts.length > 0 ? periodPosts : chPosts;
+      
+      if (targetPosts.length > 0) {
+        const formatMap = new Map();
+        targetPosts.forEach(p => {
+          const r = sum(p.reach);
+          const er = r ? p.interactions / r * 100 : 0;
+          const o = formatMap.get(p.type) || { n: 0, er: 0 };
+          o.n++; o.er += er;
+          formatMap.set(p.type, o);
+        });
+        
+        const formats = [...formatMap.entries()].map(([type, o]) => ({ type, er: o.er / o.n })).sort((a, b) => b.er - a.er);
+        if (formats.length > 1) {
+          const bestFmt = formats[0];
+          const worstFmt = formats[formats.length - 1];
+          if (bestFmt.er > worstFmt.er * 1.3) {
+            tips.push({
+              title: `Fokus auf ${bestFmt.type}s`,
+              text: `Deine <b>${bestFmt.type}s</b> erzielen mit Ø <b>${bestFmt.er.toFixed(1).replace(".", ",")}% ER</b> starke Interaktionen. Reduziere ${worstFmt.type}s und erstelle mehr ${bestFmt.type}-Inhalte.`
+            });
+          }
+        }
+      }
+      
+      if (c.followersGained > 0) {
+        const growthRate = c.growthRate || 0;
+        if (growthRate < 1.0) {
+          tips.push({
+            title: "Wachstums-Hebel aktivieren",
+            text: `Deine Wachstumsrate liegt bei <b>${growthRate.toFixed(1).replace(".", ",")}%</b>. Nutze reichweitenstarke Formate (z.B. Reels) oder bezahlte Boosts, um neue Follower zu gewinnen.`
+          });
+        } else {
+          tips.push({
+            title: "Starkes Wachstum sichern",
+            text: `Mit <b>+${fmt(c.followersGained)} Followern</b> wächst dein Kanal sehr stabil. Halte deine Community mit interaktiven Formaten (z.B. Stories, Fragerunden) aktiv.`
+          });
+        }
+      }
+      
+      const er = c.erReach || 0;
+      if (er < 2.0) {
+        tips.push({
+          title: "Interaktionen ankurbeln",
+          text: `Die Engagement-Rate von <b>${er.toFixed(1).replace(".", ",")}%</b> liegt unter dem Branchen-Schnitt (2.0%). Stelle direkte Fragen in den Captions und nutze animierende Aufrufe.`
+        });
+      } else if (tips.length < 2) {
+        tips.push({
+          title: "Starke Bindung nutzen",
+          text: `Deine Engagement-Rate liegt bei starken <b>${er.toFixed(1).replace(".", ",")}%</b>. Nutze die hohe Bindung, um wichtige Links in Bio oder Stories zu bewerben.`
+        });
+      }
+      
+      if (tips.length < 2) {
+        tips.push({
+          title: "Regelmäßig posten",
+          text: "Konstante Veröffentlichungen sichern eine stabile Basisreichweite. Erstelle einen Content-Plan für 2-3 Posts pro Woche."
+        });
+      }
+      
+      return tips;
+    }
+
+    // Rendert die HTML-Struktur der Analysten-Empfehlungskarte
+    function renderAnalystBlock(c, p, periodKey) {
+      if (!c) return "";
+      const summary = generateAnalystSummary(c, p, periodKey);
+      const tips = generateAnalystTips(c, p, periodKey);
+      const tipsHtml = tips.map(t => `
+        <div class="tip-item" style="position: relative; padding-left: 14px;">
+          <span style="position: absolute; left: 0; top: 7px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent);"></span>
+          <div class="tip-content">
+            <div class="tip-text"><b>${t.title}</b>: ${t.text}</div>
+          </div>
+        </div>
+      `).join("");
+      
+      return `
+        <div class="summary-card">
+          <div class="analyst-avatar" style="font-size: 13px; font-weight: 700; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; box-shadow: 0 4px 12px rgba(88,117,255,0.25); flex-shrink: 0;">AI</div>
+          <div class="summary-content">
+            <h3>Social Media Analyst <span class="badge">Performance Report</span></h3>
+            <p class="text">${summary}</p>
+            <div class="tips-grid">
+              ${tipsHtml}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function derive(w, isMonth = false) {
+      if (!w) return {};
+      const views=sum(w.views);
+      const reach= (isMonth && w.reach28d) ? w.reach28d : sum(w.reach);
+      const foll=w.followersTotal||0;
+      const follStart=foll-(w.followersGained||0);
+      return {
+        views, reach, interactions:w.interactions, saves:w.saves, shares:w.shares,
+        profileViews:w.profileViews, linkTaps:w.linkTaps, followersTotal:foll, followersGained:w.followersGained,
+        erReach: reach ? w.interactions/reach*100 : null,
+        erFollower: foll ? w.interactions/foll*100 : null,
+        linkTapRate: views ? w.linkTaps/views*100 : null,
+        reachRate: foll ? reach/foll*100 : null,
+        growthRate: follStart ? w.followersGained/follStart*100 : null,
+        video: w.video || null,
+        reach28d: w.reach28d || null,
+      };
+    }
+    function aggregate(cws) {
+      const a = { views:{organic:0,paid:0}, reach:{organic:0,paid:0}, interactions:0, saves:0, shares:0, linkTaps:0, profileViews:0, followersGained:0, followersTotal:0 };
+      let video=null;
+      cws.forEach(w => {
+        a.views.organic+=w.views.organic; a.views.paid+=w.views.paid;
+        a.reach.organic+=w.reach.organic; a.reach.paid+=w.reach.paid;
+        a.interactions+=w.interactions||0; a.saves+=w.saves||0; a.shares+=w.shares||0;
+        a.linkTaps+=w.linkTaps||0; a.profileViews+=w.profileViews||0; a.followersGained+=w.followersGained||0;
+        a.followersTotal = w.followersTotal || a.followersTotal;
+        if (w.video) {
+          video = video || { watchTimeHours:0, subsGained:0, subsLost:0, _r:0, _a:0, _c:0, _n:0 };
+          video.watchTimeHours+=w.video.watchTimeHours||0; video.subsGained+=w.video.subsGained||0; video.subsLost+=w.video.subsLost||0;
+          video._r+=w.video.retentionPct||0; video._a+=w.video.avgViewDurationSec||0; video._c+=w.video.thumbnailCTR||0; video._n++;
+        }
+      });
+      if (video) { video.retentionPct=video._r/video._n; video.avgViewDurationSec=video._a/video._n; video.thumbnailCTR=video._c/video._n; }
+      a.video = video;
+
+      // Letzte Woche des Monats/Zeitraums für die 28-Tage-Entdopplung nutzen
+      const latestW = cws[cws.length - 1];
+      if (latestW && latestW.reach28d != null) {
+        a.reach28d = latestW.reach28d;
+      }
+
+      return a;
+    }
+    const weeksFor = ch => S.data.weeks.filter(w => w.channels[ch]);
+    const monthKey = w => w.weekStart.slice(0,7);
+    const monthLabel = k => { const [y,m]=k.split("-"); return MONTHS[+m-1]+" "+y; };
+    const quarterKey = w => { const m=+w.weekStart.slice(5,7); return w.weekStart.slice(0,4)+"-Q"+(Math.floor((m-1)/3)+1); };
+    function groupBy(weeks, keyFn) { const map=new Map(); weeks.forEach(w=>{const k=keyFn(w); if(!map.has(k))map.set(k,[]); map.get(k).push(w);}); return [...map.entries()]; }
+
+    // Premium-Empty-State-Komponente
+    function emptyStateHtml(title, desc, ctaSettings = true, ctaDemo = false) {
+      const settingsAction = ctaSettings ? `<button class="btn primary" onclick="$('overlay').classList.add('open')">Verbindung einrichten</button>` : "";
+      const demoAction = ctaDemo ? `<button class="btn" onclick="S.status=null; refreshData();">Demo-Daten laden</button>` : "";
+      
+      return `
+        <div class="empty-state">
+          <div class="es-icon" style="margin-bottom: 20px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: rgba(255, 255, 255, 0.4);"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="14" y2="17"></line></svg>
+          </div>
+          <h3>${title}</h3>
+          <p>${desc}</p>
+          <div class="es-actions">
+            ${settingsAction}
+            ${demoAction}
+          </div>
+        </div>
+      `;
+    }
+
+    // ℹ️-Tooltip aus Erklärung + Formel.
+    function infoTip(label, desc, formula, wide) {
+      return `<span class="info" tabindex="0">i<span class="tip${wide?" wide":""}"><b>${label}</b>${desc||""}${formula?`<div class="formula">${formula}</div>`:""}</span></span>`;
+    }
+    // Eine KPI-Karte (Info optional via desc).
+    function card(key, label, value, prev, isRate, hero, desc, formula, goal, higherIsBetter = true, size = "") {
+      let deltaBadge="";
+      if (prev!=null && value!=null) {
+        const d=value-prev;
+        let cls;
+        if (Math.abs(d) < 1e-9) {
+          cls = "flat";
+        } else if (d > 0) {
+          cls = higherIsBetter ? "up" : "down";
+        } else {
+          cls = higherIsBetter ? "down" : "up";
+        }
+        const arrow = Math.abs(d)<1e-9?"→":d>0?"↑":"↓";
+        const txt = isRate ? `${d>=0?"+":"−"}${Math.abs(d).toFixed(1).replace(".",",")} pp`
+                           : `${Math.abs(prev)>0?Math.round(Math.abs(d/prev)*100):0}%`;
+        
+        let bg = "rgba(0, 0, 0, 0.03)", textCol = "rgba(31, 41, 55, 0.65)";
+        if (cls === "up") { bg = "rgba(22, 163, 74, 0.08)"; textCol = "#15803d"; }
+        if (cls === "down") { bg = "rgba(220, 38, 38, 0.08)"; textCol = "#b91c1c"; }
+        
+        deltaBadge = `<span class="delta-badge" style="background: ${bg}; color: ${textCol}; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; vertical-align: middle;">${arrow} ${txt}</span>`;
+      }
+      const info = desc ? infoTip(label, desc, formula) : "";
+      const vSize = size === "hero" ? 36 : size === "compact" ? 22 : 28;
+      const vWeight = size === "compact" ? 700 : 800;
+      let g="";
+      if (goal && goal.target!=null && value!=null) {
+        const fill=Math.max(0,Math.min(value/goal.target,1))*100, hit=value>=goal.target;
+        g=`<div class="goal" style="margin-top: 12px; border-top: 1px dashed rgba(120,130,170,0.12); padding-top: 8px;"><div class="goal-track"><div class="goal-fill" style="width:${fill}%;background:${hit?'var(--good)':'var(--accent)'}"></div></div>`+
+          `<div class="goal-txt">${hit?'✓ ':''}Ziel ${pct(goal.target)}${goal.benchmark!=null?` · Ø Branche ${pct(goal.benchmark)}`:''}</div></div>`;
+      }
+      return `<div class="kpi${hero?" hero":""}" draggable="true" ondragstart="kpiDragStart(event, '${key}')" ondragover="kpiDragOver(event)" ondragleave="kpiDragLeave(event)" ondrop="kpiDrop(event, '${key}')" ondragend="kpiDragEnd(event)" data-key="${key}">
+        <div class="label" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">${label}${info}</div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between; margin-top: 8px; flex-wrap: wrap; gap: 8px;">
+          <div class="value" style="margin-top: 0; font-size: ${vSize}px; font-weight: ${vWeight}; letter-spacing: -0.02em;">${isRate?pct(value):fmt(value)}</div>
+          ${deltaBadge}
+        </div>
+        ${g}
+      </div>`;
+    }
+    // Eine Registry-Metrik als Karte.
+    function kpi(key, c, p, size) { const m=METRICS[key]; return card(key, m.label, m.get(c), m.get(p), m.format==="rate", m.hero, m.desc, m.formula, m.target!=null?{target:m.target,benchmark:m.benchmark}:null, m.higherIsBetter !== false, size); }
+    // Hero-Überblick (3–4 wichtigste Kennzahlen groß) + restliche Funnel-Stufen kompakt.
+    // Hero-Metriken (hero:true) stehen NUR oben, damit es unten keine Doppelung gibt.
+    function renderKpiGroups(channel, c, p) {
+      const avail = k => metricAvailable(k, channel);
+      const ordered = ks => ks.sort((a, b) => S.metricOrder.indexOf(a) - S.metricOrder.indexOf(b));
+
+      const heroKeys = ordered(Object.keys(METRICS).filter(k => METRICS[k].hero && avail(k)));
+      const heroRow = heroKeys.length ? `
+          <div class="funnel-header"><span>Überblick</span><span class="funnel-step">die wichtigsten Kennzahlen</span></div>
+          <div class="kpis hero-row">${heroKeys.map(k=>kpi(k,c,p,"hero")).join("")}</div>` : "";
+
+      const groups = METRIC_GROUPS.map((g) => {
+        const keys = ordered(Object.keys(METRICS).filter(k => METRICS[k].group===g.key && !METRICS[k].hero && avail(k)));
+        if (!keys.length) return "";
+        return `
+          <div class="funnel-header"><span>${g.label}</span></div>
+          <div class="kpis secondary">${keys.map(k=>kpi(k,c,p,"compact")).join("")}</div>`;
+      }).join("");
+
+      return heroRow + groups;
+    }
+    function videoBlock(c,p) {
+      if(!c.video) return "";
+      const v=c.video, pv=p.video||{};
+      const cards = Object.entries(VIDEO_METRICS).map(([k,m]) => card(k, m.label, v[k], pv[k], m.format==="rate", false, m.desc, m.formula, null, m.higherIsBetter !== false)).join("");
+      return `<div class="group-label">Video / YouTube</div><div class="kpis">${cards}</div>`;
+    }
+    // Info-Legende für Tabellen (erklärt die Spalten).
+    function tableLegend(keys) {
+      const items = keys.map(k=>`<b style="display:inline;color:#fff">${METRICS[k].label}:</b> ${METRICS[k].desc}`).join("<br>");
+      return `<span class="info" tabindex="0" style="vertical-align:middle"><span class="tip wide" style="left:0;transform:none"><b>Spalten erklärt</b>${items}</span>i</span>`;
+    }
+
+    // Helper functions for Multi-Metric Checkbox Panel
+    function renderMetricSelectorMarkup(containerId) {
+      return `<div class="metric-selector-panel" id="${containerId}"></div>`;
+    }
+
+    function populateMetricCheckboxes(elId, currentSelection, channel, onSelectionChange) {
+      const el = $(elId);
+      if (!el) return;
+      const keys = CMP_KEYS.filter(k => metricAvailable(k, channel));
+      el.innerHTML = keys.map(k => {
+        const m = METRICS[k];
+        const checked = currentSelection.includes(k) ? 'checked' : '';
+        const disabled = (currentSelection.length === 1 && currentSelection.includes(k)) ? 'disabled' : '';
+        return `
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--text); cursor: pointer; user-select: none; padding: 4px 6px; border-radius: 6px; transition: background 0.15s;">
+            <input type="checkbox" value="${k}" ${checked} ${disabled} style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--accent);" />
+            <span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${m.label}">${m.label}</span>
+          </label>
+        `;
+      }).join("");
+
+      el.querySelectorAll("input[type='checkbox']").forEach(input => {
+        input.onchange = (ev) => {
+          const val = ev.target.value;
+          const index = currentSelection.indexOf(val);
+          if (ev.target.checked) {
+            if (index < 0) currentSelection.push(val);
+          } else {
+            if (index >= 0 && currentSelection.length > 1) {
+              currentSelection.splice(index, 1);
+            }
+          }
+          populateMetricCheckboxes(elId, currentSelection, channel, onSelectionChange);
+          onSelectionChange();
+        };
+      });
+    }
+
+    // Helper function for Format Performance Chart
+    function drawFormatChart(canvas, channel) {
+      if (!canvas) return;
+      const posts = (S.posts?.posts || []).filter(p => p.channel === channel);
+      if (!posts.length) {
+        if (S.chartById[canvas.id]) {
+          S.chartById[canvas.id].destroy();
+          delete S.chartById[canvas.id];
+        }
+        return;
+      }
+
+      const map = new Map();
+      posts.forEach(p => {
+        const r = sum(p.reach);
+        const er = r ? (p.interactions / r * 100) : 0;
+        const v = sum(p.views);
+        const o = map.get(p.type) || { n: 0, er: 0, reach: 0, views: 0 };
+        o.n++;
+        o.er += er;
+        o.reach += r;
+        o.views += v;
+        map.set(p.type, o);
+      });
+
+      const rows = [...map.entries()].map(([t, o]) => ({
+        type: t,
+        er: o.er / o.n,
+        reach: o.reach / o.n,
+        views: o.views / o.n
+      }));
+
+      const metric = S.formatMetric || "er";
+      rows.sort((a, b) => b[metric] - a[metric]);
+
+      const labels = rows.map(r => r.type);
+      const data = rows.map(r => r[metric]);
+      const isRate = metric === "er";
+
+      const datasetLabel = metric === "er" ? "Ø Engagement Rate (%)" : (metric === "reach" ? "Ø Betrachter" : "Ø Views");
+      const color = "#2f6bff";
+
+      newChart(canvas, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: datasetLabel,
+            data: data,
+            backgroundColor: color,
+            borderRadius: 4,
+            borderWidth: 0
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: c => `${datasetLabel}: ${isRate ? pct(c.parsed.x) : fmt(c.parsed.x)}`
+              }
+            }
+          },
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              ...AXES,
+              ticks: {
+                ...AXES.ticks,
+                callback: v => isRate ? v + "%" : fmt(v)
+              }
+            },
+            y: { ...AXES }
+          }
+        }
+      });
+    }
+
+    function renderWeek() {
+      const ch=S.channel, weeks=weeksFor(ch), periods=weekPeriods(ch);
+      if(!periods.length){
+        updateControlCenter([]);
+        $("content").innerHTML = emptyStateHtml(
+          "Keine Wochendaten gefunden",
+          `Für den Kanal <b>${NAMES[ch] || ch}</b> wurden keine wöchentlichen Daten in der Datenbank hinterlegt. Richte die Verbindung ein oder lade Demo-Daten.`,
+          true,
+          true
+        );
+        return;
+      }
+      const sel=resolveSel(periods), cur=sel.cur.d, prv=sel.prv?sel.prv.d:{}, last=sel.cur;
+      S.curLabel = sel.cur.label;
+      updateControlCenter(periods);
+      const splitChips = ["views","reach"].map(k=>`<button data-split="${k}" class="${S.splitMetric===k?'active':''}">${METRICS[k].label}</button>`).join("");
+      $("content").innerHTML = `
+        ${renderAnalystBlock(cur, prv, last.key)}
+        <p class="hint">Gewählte Woche: <b>KW ${last.kw}/${last.year}</b> · Vergleich zur Vorwoche · das <b>i</b> erklärt jede Kennzahl, Ziel-Balken zeigen Soll/Branche</p>
+        ${renderKpiGroups(S.channel, cur, prv)}
+        ${videoBlock(cur,prv)}
+        <div class="panel">
+          <h2>Vergleich über die KWs <span class="hint" style="font-weight:400">— Metriken wählen · Raten landen rechts</span></h2>
+          <div style="display: flex; gap: 16px; align-items: stretch; margin-top: 12px; flex-wrap: wrap;">
+            <div style="flex: 999 1 320px; min-width: 240px;">
+              <canvas id="c-compare" role="img" aria-label="Liniendiagramm: gewählte Kennzahlen über die Kalenderwochen"></canvas>
+            </div>
+            ${renderMetricSelectorMarkup("week-metric-selector")}
+          </div>
+        </div>
+        <div class="grid">
+          <div class="panel">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <h2>Organic vs. Paid</h2>
+              <select id="week-split-mode" style="font-size: 11px; padding: 2px 6px; height: auto;">
+                <option value="stacked" ${S.splitType==='stacked'?'selected':''}>Stacked Bar</option>
+                <option value="grouped" ${S.splitType==='grouped'?'selected':''}>Grouped Bar</option>
+                <option value="line" ${S.splitType==='line'?'selected':''}>Trend Line</option>
+              </select>
+            </div>
+            <div class="chips" id="split-chips">${splitChips}</div><canvas id="c-split" role="img" aria-label="Balkendiagramm: Organic gegen Paid je Kalenderwoche"></canvas>
+            <p class="hint" style="margin-top:8px">Splittbar sind aktuell Views & Betrachter — weitere Metriken folgen mit der Ads-API.</p>
+          </div>
+          <div class="panel"><h2>Engagement-Zusammensetzung <span class="hint" style="font-weight:400">(aktuelle KW)</span></h2>${engagementPanel(cur)}</div>
+        </div>
+        <div class="panel" style="overflow-x:auto">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <h2>Welches Format performt? <span class="hint" style="font-weight:400">— Format-Vergleich</span></h2>
+              <select id="format-metric-select" style="font-size: 11px; padding: 2px 6px; height: auto;">
+                <option value="er" ${S.formatMetric==='er'?'selected':''}>Ø Engagement Rate (ER)</option>
+                <option value="reach" ${S.formatMetric==='reach'?'selected':''}>Ø Betrachter (Reach)</option>
+                <option value="views" ${S.formatMetric==='views'?'selected':''}>Ø Views</option>
+              </select>
+            </div>
+            <div style="margin-bottom: 16px; height: 180px; position: relative;">
+              <canvas id="c-format" role="img" aria-label="Format Performance Chart"></canvas>
+            </div>
+            ${formatPanel(S.channel)}
+          </div>
+        <h2 class="section-title">Wochenliste — alle KWs ${tableLegend(["reach","views","interactions","erReach","saves","shares","followersGained","growthRate"])} <span class="hint" style="font-weight:400">· Spalten klickbar zum Sortieren</span></h2>
+        <div class="panel" style="overflow-x:auto" id="week-table"></div>`;
+      drawCompare(weeks); drawSplitSel(weeks); buildWeekTable(weeks);
+      populateMetricCheckboxes("week-metric-selector", S.cmp, S.channel, () => { drawCompare(weeks); });
+      drawFormatChart($("c-format"), S.channel);
+      $("week-split-mode").onchange = ev => {
+        S.splitType = ev.target.value;
+        drawSplitSel(weeks);
+      };
+      $("split-chips").querySelectorAll("button").forEach(b=>b.onclick=()=>{ S.splitMetric=b.dataset.split;
+        $("split-chips").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b)); drawSplitSel(weeks); });
+      $("format-metric-select").onchange = ev => {
+        S.formatMetric = ev.target.value;
+        drawFormatChart($("c-format"), S.channel);
+      };
+    }
+
+    // Engagement-Aufschlüsselung (aus den vorhandenen Account-Werten).
+    function engagementPanel(d) {
+      const saves=d.saves||0, shares=d.shares||0, other=Math.max(0,(d.interactions||0)-saves-shares), tot=d.interactions||1;
+      const av=metricAvailable("saves",S.channel);
+      const seg=(v,c)=> v>0?`<span style="width:${v/tot*100}%;background:${c}"></span>`:"";
+      return `<div class="compbar">${seg(other,"#2f6bff")}${av?seg(saves,"#15a34a"):""}${seg(shares,"#f97316")}</div>
+        <div class="leg"><span><i style="background:#2f6bff"></i>Likes & Kommentare ${fmt(other)}</span>
+        ${av?`<span><i style="background:#15a34a"></i>Saves ${fmt(saves)}</span>`:""}
+        <span><i style="background:#f97316"></i>Shares ${fmt(shares)}</span></div>
+        <p class="hint" style="margin-top:10px">Likes & Kommentare = Interaktionen − Saves − Shares (Account-Ebene; exakte Aufschlüsselung folgt mit Beitrags-Insights).</p>`;
+    }
+
+    // Content-Format-Analyse: Ø ER je Format (aus den Beiträgen).
+    function formatPanel(ch) {
+      const posts=(S.posts?.posts||[]).filter(p=>p.channel===ch);
+      if(!posts.length) return '<p class="hint">Keine Beitragsdaten für diesen Kanal.</p>';
+      const map=new Map();
+      posts.forEach(p=>{ const r=sum(p.reach), er=r?p.interactions/r*100:0, o=map.get(p.type)||{n:0,er:0,reach:0}; o.n++; o.er+=er; o.reach+=r; map.set(p.type,o); });
+      const rows=[...map.entries()].map(([t,o])=>({t,n:o.n,er:o.er/o.n,reach:o.reach/o.n})).sort((a,b)=>b.er-a.er);
+      return `<table><thead><tr><th>Format</th><th>Beiträge</th><th>Ø ER</th><th>Ø Betrachter</th></tr></thead><tbody>${
+        rows.map((r,i)=>`<tr><td>${r.t}</td><td>${r.n}</td><td>${pct(r.er)}</td><td>${fmt(r.reach)}</td></tr>`).join("")}</tbody></table>`;
+    }
+
+    // Sortierbare KW-Tabelle.
+    const WK_COLS = [
+      {key:"kw",label:"KW",fmt:v=>"KW "+v},
+      {key:"reach",label:"Betrachter",fmt:fmt},
+      {key:"views",label:"Views",fmt:fmt},
+      {key:"interactions",label:"Interakt.",fmt:fmt},
+      {key:"erReach",label:"ER",fmt:pct},
+      {key:"saves",label:"Saves",fmt:fmt},
+      {key:"shares",label:"Shares",fmt:fmt},
+      {key:"followersGained",label:"Follower+",fmt:v=>"+"+fmt(v)},
+      {key:"growthRate",label:"Wachstum",fmt:pct},
+    ];
+    function buildWeekTable(weeks) {
+      const ch=S.channel;
+      const rows = weeks.map(w=>{ const d=derive(w.channels[ch]); return {kw:w.kw, reach:d.reach, views:d.views, interactions:d.interactions, erReach:d.erReach, saves:d.saves, shares:d.shares, followersGained:d.followersGained, growthRate:d.growthRate}; });
+      const {key,dir}=S.weekSort;
+      rows.sort((a,b)=>{ const av=a[key]??-Infinity, bv=b[key]??-Infinity; return dir==="asc"?av-bv:bv-av; });
+      const cols = WK_COLS.filter(c=> !(c.key==="saves" && !metricAvailable("saves",ch)));
+      const head = cols.map(c => {
+        const isActive = key === c.key;
+        const arrow = isActive ? (dir === "asc" ? "▲" : "▼") : "⇅";
+        return `<th class="sortable${isActive ? ' active-sort' : ''}" data-col="${c.key}">${c.label}<span class="sort-indicator">${arrow}</span></th>`;
+      }).join("");
+      const body = rows.map(r=>`<tr>${cols.map(c=>`<td>${r[c.key]==null?"–":c.fmt(r[c.key])}</td>`).join("")}</tr>`).join("");
+      $("week-table").innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+      $("week-table").querySelectorAll("th.sortable").forEach(th=>th.onclick=()=>{ const k=th.dataset.col;
+        S.weekSort = {key:k, dir:(S.weekSort.key===k && S.weekSort.dir==="desc")?"asc":"desc"}; buildWeekTable(weeks); });
+    }
+
+    // ═══ Perioden-Bausteine — geteilt von Monat & Quartal (analog zur Wochen-Logik) ═══
+    // Eine Periode = { key, label, sortVal, weeks, agg (rohes Aggregat), d (berechnete Kennzahlen) }.
+    function monthPeriods(ch) {
+      return groupBy(weeksFor(ch), monthKey).sort((a,b)=> a[0]<b[0]?-1:1)
+        .map(([key,weeks])=>{ const agg=aggregate(weeks.map(w=>w.channels[ch]));
+          return { key, label:monthLabel(key), sortVal:key, weeks, agg, d:derive(agg, true) }; });
+    }
+    // Kanalübergreifende Summen (Quartal): additive Metriken summieren, Follower-Stände je Kanal aufaddieren.
+    function crossDerive(weeks, chans) {
+      const per = chans.map(ch=>{ const cw=weeks.filter(w=>w.channels[ch]).map(w=>w.channels[ch]); return cw.length?aggregate(cw):null; }).filter(Boolean);
+      const t = { views:{organic:0,paid:0}, reach:{organic:0,paid:0}, interactions:0, saves:0, shares:0, linkTaps:0, profileViews:0, followersGained:0, followersTotal:0 };
+      let video=null;
+      per.forEach(a=>{ t.views.organic+=a.views.organic; t.views.paid+=a.views.paid; t.reach.organic+=a.reach.organic; t.reach.paid+=a.reach.paid;
+        t.interactions+=a.interactions; t.saves+=a.saves; t.shares+=a.shares; t.linkTaps+=a.linkTaps; t.profileViews+=a.profileViews;
+        t.followersGained+=a.followersGained; t.followersTotal+=a.followersTotal;
+        if(a.video){ video=video||{watchTimeHours:0,subsGained:0,subsLost:0,retentionPct:0,avgViewDurationSec:0,thumbnailCTR:0,_n:0};
+          video.watchTimeHours+=a.video.watchTimeHours; video.subsGained+=a.video.subsGained; video.subsLost+=a.video.subsLost;
+          video.retentionPct+=a.video.retentionPct; video.avgViewDurationSec+=a.video.avgViewDurationSec; video.thumbnailCTR+=a.video.thumbnailCTR; video._n++; } });
+      if(video){ video.retentionPct/=video._n; video.avgViewDurationSec/=video._n; video.thumbnailCTR/=video._n; }
+      t.video=video; return t;
+    }
+    function quarterPeriods(chans) {
+      return groupBy(S.data.weeks, quarterKey).sort((a,b)=> a[0]<b[0]?-1:1)
+        .map(([key,weeks])=>{ const agg=crossDerive(weeks,chans);
+          return { key, label:key.replace("-Q"," · Q"), sortVal:key, weeks, agg, d:derive(agg) }; });
+    }
+    // Funnel-KPI-Gruppen, kanalübergreifend: Metrik zeigen, sobald sie in IRGENDEINEM gewählten Kanal existiert.
+    function renderKpiGroupsAny(channels, c, p) {
+      return METRIC_GROUPS.map((g, idx) => {
+        const keys = Object.keys(METRICS)
+          .filter(k => METRICS[k].group===g.key && channels.some(ch=>metricAvailable(k,ch)))
+          .sort((a, b) => S.metricOrder.indexOf(a) - S.metricOrder.indexOf(b));
+        if (!keys.length) return "";
+        return `
+          <div class="funnel-header">
+            <span>${g.label}</span>
+            <span class="funnel-step">Stufe ${idx + 1} von ${METRIC_GROUPS.length}</span>
+          </div>
+          <div class="kpis">${keys.map(k=>kpi(k,c,p)).join("")}</div>
+        `;
+      }).join("");
+    }
+    // Sortierbare Perioden-Tabelle (Monatsliste / Quartalsliste / Kanäle im Quartal).
+    //   periods = [{ label (Text/HTML), sortVal, d }]. firstLabel = Kopf der ersten Spalte. showSaves = Saves-Spalte zeigen?
+    //   sortKey = Name des State-Felds in S, das den Sortierzustand hält.
+    const PERIOD_COLS = [
+      {key:"reach",label:"Betrachter",fmt:fmt},
+      {key:"views",label:"Views",fmt:fmt},
+      {key:"interactions",label:"Interakt.",fmt:fmt},
+      {key:"erReach",label:"ER",fmt:pct},
+      {key:"saves",label:"Saves",fmt:fmt},
+      {key:"shares",label:"Shares",fmt:fmt},
+      {key:"followersGained",label:"Follower+",fmt:v=>"+"+fmt(v)},
+      {key:"growthRate",label:"Wachstum",fmt:pct},
+    ];
+    function buildPeriodTable(elId, firstLabel, periods, showSaves, sortKey) {
+      const cols = PERIOD_COLS.filter(c=> !(c.key==="saves" && !showSaves));
+      const sort=S[sortKey], {key,dir}=sort, rows=[...periods];
+      rows.sort((a,b)=>{ if(key==="_label") return dir==="asc"?(a.sortVal<b.sortVal?-1:1):(a.sortVal<b.sortVal?1:-1);
+        const av=a.d[key]??-Infinity, bv=b.d[key]??-Infinity; return dir==="asc"?av-bv:bv-av; });
+      
+      const headCell = (colKey, label) => {
+        const isActive = key === colKey;
+        const arrow = isActive ? (dir === "asc" ? "▲" : "▼") : "⇅";
+        return `<th class="sortable${isActive ? ' active-sort' : ''}" data-col="${colKey}">${label}<span class="sort-indicator">${arrow}</span></th>`;
+      };
+      
+      const head = headCell("_label", firstLabel) + cols.map(c => headCell(c.key, c.label)).join("");
+      const body = rows.map(r=>`<tr><td>${r.label}</td>`+cols.map(c=>`<td>${r.d[c.key]==null?"–":c.fmt(r.d[c.key])}</td>`).join("")+`</tr>`).join("");
+      $(elId).innerHTML=`<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+      $(elId).querySelectorAll("th.sortable").forEach(th=>th.onclick=()=>{ const k=th.dataset.col;
+        S[sortKey]={key:k, dir:(sort.key===k && sort.dir==="desc")?"asc":"desc"}; buildPeriodTable(elId,firstLabel,periods,showSaves,sortKey); });
+    }
+
+    // ═══ Datums-Switcher — eine Report-Seite, Granularität & Zeitraum frei wählbar ═══
+    // Wochen als Perioden (eine Periode = eine KW), analog zu monthPeriods/quarterPeriods.
+    function weekPeriods(ch) {
+      return weeksFor(ch).slice().sort((a,b)=> a.weekStart<b.weekStart?-1:1)
+        .map(w=>({ key:w.weekStart, label:`KW ${w.kw} · ${w.year}`, kw:w.kw, year:w.year, sortVal:w.weekStart,
+                   weeks:[w], agg:w.channels[ch], d:derive(w.channels[ch]) }));
+    }
+    // Gewählte Periode (per S.period-Key) auflösen — fällt auf die neueste zurück.
+    function resolveSel(periods) {
+      let i = periods.findIndex(p=>p.key===S.period); if (i<0) i = periods.length-1;
+      return { idx:i, cur:periods[i], prv:i>0?periods[i-1]:null };
+    }
+    // Aktualisiert die Steuerungselemente im zentralen Control-Center.
+    function updateControlCenter(periods) {
+      const granSeg = $("gran-seg");
+      if (granSeg) {
+        granSeg.querySelectorAll("button").forEach(b => {
+          b.classList.toggle("active", b.dataset.gran === S.gran);
+        });
+      }
+      
+      const psel = $("period-sel");
+      const wrapper = $("period-selector-wrapper");
+      
+      if (!periods || !periods.length) {
+        if (psel) {
+          psel.innerHTML = `<option>—</option>`;
+          psel.disabled = true;
+        }
+        if (wrapper) wrapper.style.display = "none";
+      } else {
+        if (wrapper) wrapper.style.display = "flex";
+        if (psel) {
+          psel.disabled = false;
+          const selKey = resolveSel(periods).cur.key;
+          psel.innerHTML = [...periods].reverse().map(p => `<option value="${p.key}" ${p.key === selKey ? 'selected' : ''}>${p.label}</option>`).join("");
+        }
+      }
+    }
+
+    function renderMonth() {
+      const periods = monthPeriods(S.channel);
+      if (!periods.length) {
+        updateControlCenter([]);
+        $("content").innerHTML = emptyStateHtml(
+          "Keine Monatsdaten gefunden",
+          `Für den Kanal <b>${NAMES[S.channel] || S.channel}</b> wurden keine monatlichen Daten generiert. Stelle sicher, dass für diesen Kanal Wochenwerte vorhanden sind.`,
+          true,
+          true
+        );
+        return;
+      }
+      const sel=resolveSel(periods), cur=sel.cur, prev=sel.prv, c=cur.d, p=prev?prev.d:{};
+      S.curLabel = cur.label;
+      updateControlCenter(periods);
+      const labels=periods.map(x=>x.label);
+      const splitChips = ["views","reach"].map(k=>`<button data-split="${k}" class="${S.monthSplit===k?'active':''}">${METRICS[k].label}</button>`).join("");
+      const monthPosts = (S.posts?.posts||[]).filter(x => x.channel===S.channel && x.date.slice(0,7)===cur.key);
+      const hasTrueReach = c.reach28d != null && c.reach28d > 0;
+      const reachHint = hasTrueReach
+        ? ""
+        : `<p class="hint" style="margin-top:-2px"><i>Hinweis: Reichweite ist hier die <b>Summe der Wochen</b> — Personen können über mehrere Wochen mehrfach zählen (echte entdoppelte Monats-Reichweite braucht einen Monats-Abruf). Views & Interaktionen sind sauber summierbar.</i></p>`;
+      $("content").innerHTML = `
+        ${renderAnalystBlock(c, p, cur.key)}
+        <p class="hint">Gewählter Monat: <b>${cur.label}</b> <span class="hint" style="font-weight:400">(${cur.weeks.length} KWs)</span> · Vergleich zum Vormonat · das <b>i</b> erklärt jede Kennzahl, Ziel-Balken zeigen Soll/Branche</p>
+        ${reachHint}
+        ${renderKpiGroups(S.channel, c, p)}
+        ${videoBlock(c,p)}
+        <div class="panel">
+          <h2>Vergleich über die Monate <span class="hint" style="font-weight:400">— Metriken wählen · Raten landen rechts</span></h2>
+          <div style="display: flex; gap: 16px; align-items: stretch; margin-top: 12px; flex-wrap: wrap;">
+            <div style="flex: 999 1 320px; min-width: 240px;">
+              <canvas id="c-compare" role="img" aria-label="Liniendiagramm: gewählte Kennzahlen über die Monate"></canvas>
+            </div>
+            ${renderMetricSelectorMarkup("month-metric-selector")}
+          </div>
+        </div>
+        <div class="grid">
+          <div class="panel">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <h2>Organic vs. Paid <span class="hint" style="font-weight:400">— je Monat</span></h2>
+              <select id="month-split-mode" style="font-size: 11px; padding: 2px 6px; height: auto;">
+                <option value="stacked" ${S.monthSplitType==='stacked'?'selected':''}>Stacked Bar</option>
+                <option value="grouped" ${S.monthSplitType==='grouped'?'selected':''}>Grouped Bar</option>
+                <option value="line" ${S.monthSplitType==='line'?'selected':''}>Trend Line</option>
+              </select>
+            </div>
+            <div class="chips" id="split-chips">${splitChips}</div><canvas id="c-split" role="img" aria-label="Balkendiagramm: Organic gegen Paid je Monat"></canvas>
+            <p class="hint" style="margin-top:8px">Splittbar sind aktuell Views & Betrachter — weitere Metriken folgen mit der Ads-API.</p>
+          </div>
+          <div class="panel"><h2>Engagement-Zusammensetzung <span class="hint" style="font-weight:400">(${cur.label})</span></h2>${engagementPanel(c)}</div>
+        </div>
+        <div class="panel" style="overflow-x:auto">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <h2>Welches Format performt? <span class="hint" style="font-weight:400">— Format-Vergleich</span></h2>
+              <select id="format-metric-select" style="font-size: 11px; padding: 2px 6px; height: auto;">
+                <option value="er" ${S.formatMetric==='er'?'selected':''}>Ø Engagement Rate (ER)</option>
+                <option value="reach" ${S.formatMetric==='reach'?'selected':''}>Ø Betrachter (Reach)</option>
+                <option value="views" ${S.formatMetric==='views'?'selected':''}>Ø Views</option>
+              </select>
+            </div>
+            <div style="margin-bottom: 16px; height: 180px; position: relative;">
+              <canvas id="c-format" role="img" aria-label="Format Performance Chart"></canvas>
+            </div>
+            ${formatPanel(S.channel)}
+          </div>
+        <h2 class="section-title">Best & Worst <span class="hint" style="font-weight:400">(${cur.label}, nach ER)</span></h2>
+        <div class="panel">${monthPosts.length?postList(monthPosts):'<p class="hint">Keine Beitragsdaten für diesen Monat.</p>'}</div>
+        <h2 class="section-title">Monatsliste — alle Monate ${tableLegend(["reach","views","interactions","erReach","saves","shares","followersGained","growthRate"])} <span class="hint" style="font-weight:400">· Spalten klickbar zum Sortieren</span></h2>
+        <div class="panel" style="overflow-x:auto" id="period-table"></div>`;
+      lineCompare($("c-compare"), labels, periods.map(x=>x.d), S.monthCmp, S.channel);
+      barSplit($("c-split"), labels, periods.map(x=>x.agg), S.monthSplit, S.monthSplitType);
+      buildPeriodTable("period-table", "Monat", periods, metricAvailable("saves",S.channel), "monthSort");
+      populateMetricCheckboxes("month-metric-selector", S.monthCmp, S.channel, () => {
+        lineCompare($("c-compare"), labels, periods.map(x=>x.d), S.monthCmp, S.channel);
+      });
+      drawFormatChart($("c-format"), S.channel);
+      $("month-split-mode").onchange = ev => {
+        S.monthSplitType = ev.target.value;
+        barSplit($("c-split"), labels, periods.map(x=>x.agg), S.monthSplit, S.monthSplitType);
+      };
+      $("split-chips").querySelectorAll("button").forEach(b=>b.onclick=()=>{ S.monthSplit=b.dataset.split;
+        $("split-chips").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b)); barSplit($("c-split"), labels, periods.map(x=>x.agg), S.monthSplit, S.monthSplitType); });
+      $("format-metric-select").onchange = ev => {
+        S.formatMetric = ev.target.value;
+        drawFormatChart($("c-format"), S.channel);
+      };
+    }
+    function postList(posts) {
+      const ranked = posts.map(p=>{ const r=sum(p.reach); return {...p, r, er:r?p.interactions/r*100:0}; }).sort((a,b)=>b.er-a.er);
+      const best = ranked.slice(0,2), worst = ranked.slice(-2).reverse().filter(x=>!best.includes(x));
+      const row = (p,m) => `<div class="post"><div class="rank" style="font-size: 13px; font-weight: 700; color: var(--muted);">${m}</div><div class="meta"><div class="cap">${escHtml(p.caption)}</div>
+        <div class="tags">${p.type}<span class="tag-pill ${p.boosted?"paid":"organic"}">${p.boosted?"Paid":"Organic"}</span></div></div>
+        <div class="num">${pct(p.er)}<small>ER · ${fmt(p.r)} Betr.</small></div></div>`;
+      return `<div class="posts">${best.map((p,i)=>row(p, `#${i+1}`)).concat(worst.map((p,i)=>row(p, `#${ranked.length-i}`))).join("")}</div>`;
+    }
+
+    // Kanal-Anteil an einer Metrik im Quartal (Balken-Komposition + Legende).
+    function channelShare(q, chans, key) {
+      const m=METRICS[key];
+      const parts = chans.map(ch=>{ const cw=q.weeks.filter(w=>w.channels[ch]).map(w=>w.channels[ch]); if(!cw.length) return null;
+        return { ch, v:m.get(derive(aggregate(cw)))||0 }; }).filter(Boolean).sort((a,b)=>b.v-a.v);
+      const tot = parts.reduce((s,x)=>s+x.v,0)||1;
+      const seg = parts.map(x=> x.v>0?`<span style="width:${x.v/tot*100}%;background:${CH_COLOR[x.ch]}"></span>`:"").join("");
+      const leg = parts.map(x=>`<span><i style="background:${CH_COLOR[x.ch]}"></i>${NAMES[x.ch]} ${fmt(x.v)} <span style="opacity:.7">(${pct(x.v/tot*100)})</span></span>`).join("");
+      return `<div class="compbar">${seg}</div><div class="leg">${leg}</div>
+        <p class="hint" style="margin-top:10px">Anteil je Kanal an „${m.label}" im Quartal — zeigt, welcher Kanal das Quartal trägt.</p>`;
+    }
+    // Verlauf im aktuellen Quartal: eine Linie je Kanal für die gewählte Metrik.
+    function drawQuarterTrend(q, chans) {
+      const ws=[...q.weeks].sort((a,b)=>a.weekStart<b.weekStart?-1:1), labels=ws.map(w=>"KW "+w.kw);
+      const m=METRICS[S.quarterMetric], rate=m.format==="rate";
+      const canvas = $("c-qtrend");
+      const ctx = canvas ? canvas.getContext('2d') : null;
+      const datasets = chans.filter(ch=>metricAvailable(S.quarterMetric,ch)).map(ch=>{
+        const color = CH_COLOR[ch] || "#2f6bff";
+        let bg = "transparent";
+        let fill = false;
+        if (chans.length <= 2) {
+          bg = ctx ? getGradient(ctx, color) : "transparent";
+          fill = true;
+        }
+        return {
+          label: NAMES[ch],
+          data: ws.map(w=>w.channels[ch]?m.get(derive(w.channels[ch])):null),
+          borderColor: color,
+          backgroundColor: bg,
+          fill: fill,
+          tension: 0.4,
+          borderWidth: 3,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: color,
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
+          spanGaps: true
+        };
+      });
+      newChart(canvas, { type:"line", data:{labels,datasets},
+        options:{ plugins:{legend:LEGEND, tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${rate?pct(c.parsed.y):fmt(c.parsed.y)}`}}},
+          maintainAspectRatio:true, interaction:{mode:"index",intersect:false},
+           scales:{ x:{...AXES}, y:{...AXES, title:{display:true,text:m.label,color:"#4b5563"}} } } });
+    }
+
+    function renderQuarter() {
+      const chans = Object.keys(S.data.weeks[0].channels);
+      const single = S.qChannel!=="all" && chans.includes(S.qChannel);
+      const activeChans = single ? [S.qChannel] : chans;       // Plattform-Filter: eine Plattform oder alle
+      const periods = quarterPeriods(activeChans);
+      if (!periods.length) {
+        updateControlCenter([]);
+        $("content").innerHTML = emptyStateHtml(
+          "Keine Quartalsdaten gefunden",
+          `Für die Plattform-Auswahl wurden keine Quartalswerte berechnet.`,
+          true,
+          true
+        );
+        return;
+      }
+      const sel=resolveSel(periods), cur=sel.cur, prev=sel.prv, c=cur.d, p=prev?prev.d:{};
+      S.curLabel = cur.label;
+      updateControlCenter(periods);
+      const showSaves = activeChans.some(ch=>metricAvailable("saves",ch));
+      const scopeLbl = single ? NAMES[S.qChannel] : "alle Kanäle";
+      const qMetChips = CMP_KEYS.filter(k=>activeChans.some(ch=>metricAvailable(k,ch))).map(k=>`<button data-qm="${k}" class="${S.quarterMetric===k?'active':''}">${METRICS[k].label}</button>`).join("");
+      // Kanäle des aktuellen Quartals als „Perioden" für die sortierbare Kanal-Tabelle.
+      const chanRows = activeChans.map(ch=>{ const cw=cur.weeks.filter(w=>w.channels[ch]).map(w=>w.channels[ch]); if(!cw.length) return null;
+        return { label:`<span class="ch-dot" style="background:${CH_COLOR[ch]}"></span>${NAMES[ch]}`, sortVal:ch, d:derive(aggregate(cw)) }; }).filter(Boolean);
+      // Kanal-Anteil & Kanal-Tabelle nur sinnvoll bei „Alle Kanäle".
+      const crossBlocks = single ? "" : `
+        <div class="panel"><h2>Kanal-Anteil <span class="hint" style="font-weight:400">(Betrachter)</span></h2>${channelShare(cur, activeChans, "reach")}</div>
+        <h2 class="section-title">Kanäle im aktuellen Quartal ${tableLegend(["reach","views","interactions","erReach","saves","shares","followersGained","growthRate"])} <span class="hint" style="font-weight:400">· Spalten klickbar zum Sortieren</span></h2>
+        <div class="panel" style="overflow-x:auto" id="q-chan-table"></div>`;
+      $("content").innerHTML = `
+        ${renderAnalystBlock(c, p, cur.key)}
+        <p class="hint">Gewähltes Quartal: <b>${cur.label}</b> <span class="hint" style="font-weight:400">(${cur.weeks.length} KWs, ${scopeLbl})</span> · Vergleich zum Vorquartal · das <b>i</b> erklärt jede Kennzahl</p>
+        <p class="hint" style="margin-top:-2px"><i>Hinweis: Reichweite = <b>Summe der Wochen</b> (Personen können mehrfach zählen) · Raten (ER, Wachstum) sind auf die Quartalssummen gerechnet.</i></p>
+        ${renderKpiGroupsAny(activeChans, c, p)}
+        ${videoBlock(c,p)}
+        <div class="panel">
+          <h2>Verlauf im Quartal <span class="hint" style="font-weight:400">${single?"— Metrik wählen":"— Metrik wählen, je Kanal eine Linie"}</span></h2>
+          <div class="chips" id="q-metric">${qMetChips}</div><canvas id="c-qtrend" role="img" aria-label="Liniendiagramm: gewählte Kennzahl über das Quartal"></canvas>
+        </div>
+        ${crossBlocks}
+        <h2 class="section-title">Quartalsliste — alle Quartale <span class="hint" style="font-weight:400">(${scopeLbl}) · Spalten klickbar zum Sortieren</span></h2>
+        <div class="panel" style="overflow-x:auto" id="period-table"></div>`;
+      drawQuarterTrend(cur, activeChans);
+      if (!single) buildPeriodTable("q-chan-table", "Kanal", chanRows, showSaves, "quarterChSort");
+      buildPeriodTable("period-table", "Quartal", periods, showSaves, "quarterSort");
+      $("q-metric").querySelectorAll("button").forEach(b=>b.onclick=()=>{ S.quarterMetric=b.dataset.qm;
+        $("q-metric").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b)); drawQuarterTrend(cur, activeChans); });
+    }
+
+    // ═══ Schritt 3: Explorer — freie Auswertung über Kanäle, Zeitraum & Metriken ═══
+    const CH_COLOR = { instagram:"#2f6bff", facebook:"#15a34a", youtube:"#e11d48" };
+    // Wochen chronologisch — über das echte Wochen-Datum (year-safe, auch über Jahreswechsel).
+    const weeksChrono = () => [...S.data.weeks].sort((a,b)=> a.weekStart<b.weekStart?-1:1);
+    const addDays = (iso,n) => { const d=new Date(iso+"T00:00:00"); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+    const deDate = iso => iso.split("-").reverse().join("."); // 2026-05-06 → 06.05.2026
+    const escHtml = s => (s==null?"":String(s)).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    // Metrik in mind. einem gewählten Kanal verfügbar?
+    const expMetricOk = key => S.exp.channels.some(ch=>metricAvailable(key,ch));
+    // Wochen eines Kanals im gewählten Zeitraum, chronologisch.
+    function expWeeks(ch) {
+      const e=S.exp; return weeksFor(ch).filter(w=>w.weekStart>=e.dateFrom && w.weekStart<=e.dateTo).sort((a,b)=>a.weekStart<b.weekStart?-1:1);
+    }
+    // Alle Wochen (kanalübergreifend) im Zeitraum, chronologisch — für die Chart-Achse.
+    const expRangeWeeks = () => weeksChrono().filter(w=>w.weekStart>=S.exp.dateFrom && w.weekStart<=S.exp.dateTo);
+
+    function renderExplorer() {
+      const scrollY = window.scrollY;
+      const _scrollAnchor = scrollY;
+      const e = S.exp, chans = Object.keys(S.data.weeks[0].channels), chrono = weeksChrono();
+      if (!e.channels) e.channels = [...chans];
+      if (e.dateFrom==null) { e.dateFrom = chrono[0].weekStart; e.dateTo = chrono.at(-1).weekStart; }
+      // Defensive: gewählte Metriken auf Existenz/Verfügbarkeit prüfen.
+      e.metrics = e.metrics.filter(k=>METRICS[k]); if (!e.metrics.length) e.metrics = ["reach"];
+      e.chartMetrics = e.chartMetrics.filter(k=>METRICS[k]); if (!e.chartMetrics.length) e.chartMetrics = ["reach"];
+
+      const chanChips = chans.map(c=>`<button data-ech="${c}" class="${e.channels.includes(c)?'active':''}">${NAMES[c]}</button>`).join("");
+      // Zeitraum über echtes Wochen-Datum: Wert = weekStart, Label = "KW 16 · 2026".
+      const dateOpts = sel => chrono.map(w=>`<option value="${w.weekStart}" ${w.weekStart===sel?'selected':''}>KW ${w.kw} · ${w.year}</option>`).join("");
+      const chartChips = Object.keys(METRICS).map(k=>{ const ok=expMetricOk(k);
+        return `<button data-cmet="${k}" class="${e.chartMetrics.includes(k)?'active':''}" ${ok?'':'disabled style="opacity:.35;cursor:not-allowed"'} title="${ok?'':'In keinem gewählten Kanal verfügbar'}">${METRICS[k].label}</button>`; }).join("");
+      const colChips = Object.keys(METRICS).map(k=>{ const ok=expMetricOk(k);
+        return `<button data-emet="${k}" class="${e.metrics.includes(k)?'active':''}" ${ok?'':'disabled style="opacity:.35;cursor:not-allowed"'} title="${ok?'':'In keinem gewählten Kanal verfügbar'}">${METRICS[k].label}</button>`; }).join("");
+      const ccolChips = CONTENT_DEFS.map(c=>`<button data-ccol="${c.key}" class="${e.ccols.includes(c.key)?'active':''}">${c.label}</button>`).join("");
+
+      $("content").innerHTML = `
+        <p class="hint">Baue dir deine eigene Auswertung: Kanäle, Zeitraum & Metriken frei wählen. Chart vergleicht mehrere Linien, die Tabelle ist pro Spalte sortierbar.</p>
+        <div class="panel" style="margin-top:14px">
+          <div class="exp-row"><span class="exp-lbl">Kanäle</span><div class="chips" id="exp-chan" style="margin:0">${chanChips}</div></div>
+          <div class="exp-row"><span class="exp-lbl">Zeitraum</span>
+            <span class="exp-range">von <select id="exp-from">${dateOpts(e.dateFrom)}</select> bis <select id="exp-to">${dateOpts(e.dateTo)}</select></span>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h2>Verlauf <span class="hint" style="font-weight:400">— Linien vergleichen · Raten landen rechts</span></h2>
+          <div class="chips" id="exp-chartmet">${chartChips}</div>
+          <canvas id="c-explorer" role="img" aria-label="Liniendiagramm: gewählte Kennzahlen je Kanal über den Zeitraum"></canvas>
+        </div>
+        <div class="topbar" style="margin:28px 0 6px"><h2 class="section-title" style="margin:0">Datentabelle</h2>
+          <div class="seg" id="exp-mode">
+            <button data-mode="page" class="${e.tableMode==='page'?'active':''}">Seite (wöchentlich)</button>
+            <button data-mode="content" class="${e.tableMode==='content'?'active':''}">Inhalte (Beiträge)</button>
+          </div>
+        </div>
+        <div id="exp-colpicker" style="display:${e.tableMode==='page'?'block':'none'};margin-bottom:10px">
+          <div class="exp-row" style="padding-top:0;border:none"><span class="exp-lbl">Spalten ${tableLegend(e.metrics.filter(k=>METRICS[k].desc))}</span><div class="chips" id="exp-met" style="margin:0">${colChips}</div></div>
+        </div>
+        <p class="hint" id="exp-content-note" style="display:${e.tableMode==='content'?'block':'none'};margin:0 0 10px">Einzelne Beiträge im gewählten Zeitraum & Kanal. <i>(Beispiel-Beiträge mit Platzhalter-Vorschau; echte Vorschaubilder kommen mit dem Beitrags-Abruf in Phase 2.)</i></p>
+        ${e.tableMode==='content' ? `<div class="content-tools">
+          <div class="seg" id="exp-cview"><button data-cv="gallery" class="${e.contentView==='gallery'?'active':''}">Galerie</button><button data-cv="table" class="${e.contentView==='table'?'active':''}">Tabelle</button></div>
+          <span class="exp-range" id="exp-gsort-wrap" style="${e.contentView==='gallery'?'':'display:none'}">Sortieren nach <select id="exp-gsort">${Object.entries(GSORT).map(([k,l])=>`<option value="${k}" ${k===e.gsort?'selected':''}>${l}</option>`).join("")}</select></span>
+        </div>` : ""}
+        ${e.tableMode==='content' && e.contentView==='table' ? `<div class="exp-row" style="padding-top:0;border:none;margin-bottom:12px"><span class="exp-lbl">Spalten</span><div class="chips" id="exp-ccols" style="margin:0">${ccolChips}</div></div>` : ""}
+        <div class="panel" style="overflow-x:auto" id="exp-table"></div>`;
+
+      drawExplorerChart(); buildExplorerTable();
+
+      $("exp-chan").querySelectorAll("button").forEach(b=>b.onclick=()=>{ const c=b.dataset.ech, i=e.channels.indexOf(c);
+        if(i>=0){ if(e.channels.length>1) e.channels.splice(i,1); } else e.channels.push(c);
+        renderExplorer(); });
+      $("exp-chartmet").querySelectorAll("button:not([disabled])").forEach(b=>b.onclick=()=>{ const k=b.dataset.cmet, i=e.chartMetrics.indexOf(k);
+        if(i>=0){ if(e.chartMetrics.length>1) e.chartMetrics.splice(i,1); } else e.chartMetrics.push(k);
+        b.classList.toggle("active", i < 0);
+        drawExplorerChart(); });
+      $("exp-met").querySelectorAll("button:not([disabled])").forEach(b=>b.onclick=()=>{ const k=b.dataset.emet, i=e.metrics.indexOf(k);
+        if(i>=0){ if(e.metrics.length>1) e.metrics.splice(i,1); } else e.metrics.push(k);
+        b.classList.toggle("active", i < 0);
+        buildExplorerTable(); });
+      $("exp-mode").querySelectorAll("button").forEach(b=>b.onclick=()=>{ e.tableMode=b.dataset.mode; renderExplorer(); });
+      if($("exp-cview")) $("exp-cview").querySelectorAll("button").forEach(b=>b.onclick=()=>{ e.contentView=b.dataset.cv; renderExplorer(); });
+      if($("exp-gsort")) $("exp-gsort").onchange=ev=>{ e.gsort=ev.target.value; buildContentGallery(); };
+      if($("exp-ccols")) $("exp-ccols").querySelectorAll("button").forEach(b=>b.onclick=()=>{ const k=b.dataset.ccol, i=e.ccols.indexOf(k);
+        if(i>=0){ if(e.ccols.length>1) e.ccols.splice(i,1); } else e.ccols.push(k);
+        b.classList.toggle("active", i < 0);
+        buildExplorerTable(); });
+      $("exp-from").onchange=ev=>{ e.dateFrom=ev.target.value; if(e.dateFrom>e.dateTo) e.dateTo=e.dateFrom; renderExplorer(); };
+      $("exp-to").onchange=ev=>{ e.dateTo=ev.target.value; if(e.dateTo<e.dateFrom) e.dateFrom=e.dateTo; renderExplorer(); };
+
+      // Double rAF: wait for fade-in reflow to settle before restoring scroll
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        window.scrollTo(0, _scrollAnchor);
+      }));
+    }
+
+    // Verlaufs-Chart: mehrere Metriken vergleichbar. 1 Kanal → Farbe je Metrik (wie Wochenboard);
+    // mehrere Kanäle → Farbe je Kanal, Strichart je Metrik. Raten auf Sekundärachse.
+    function drawExplorerChart() {
+      const e=S.exp, rangeWeeks=expRangeWeeks();
+      const yrs = new Set(rangeWeeks.map(w=>w.year));
+      const lbl = w => "KW "+w.kw + (yrs.size>1 ? " ·"+String(w.year).slice(2) : "");
+      const labels = rangeWeeks.map(lbl), wsList = rangeWeeks.map(w=>w.weekStart);
+      const mets = e.chartMetrics.filter(k=>METRICS[k] && expMetricOk(k));
+      const hasRate = mets.some(k=>METRICS[k].format==="rate");
+      const single = e.channels.length===1;
+      const DASH = [[],[6,4],[2,3],[8,3,2,3]];
+      const datasets=[];
+      const canvas = $("c-explorer");
+      const ctx = canvas ? canvas.getContext('2d') : null;
+      
+      e.channels.forEach(ch=>mets.forEach((k,mi)=>{
+        if(!metricAvailable(k,ch)) return;
+        const m=METRICS[k], byWs=Object.fromEntries(expWeeks(ch).map(w=>[w.weekStart, m.get(derive(w.channels[ch]))]));
+        const name = single ? m.label : (mets.length>1 ? NAMES[ch]+" · "+m.label : NAMES[ch]);
+        const color = single ? PAL[mi%PAL.length] : (CH_COLOR[ch]||"#2f6bff");
+        
+        let bg = "transparent";
+        let fill = false;
+        if (e.channels.length * mets.length <= 2) {
+          bg = ctx ? getGradient(ctx, color) : "transparent";
+          fill = true;
+        }
+        
+        datasets.push({
+          label:name,
+          data:wsList.map(ws=>byWs[ws]??null),
+          borderColor: color,
+          backgroundColor: bg,
+          fill: fill,
+          tension: 0.4,
+          borderWidth: 3,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: color,
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
+          spanGaps: true,
+          borderDash: single ? [] : DASH[mi%DASH.length],
+          yAxisID: m.format==="rate"?"y1":"y"
+        });
+      }));
+      newChart(canvas, { type:"line", data:{labels,datasets},
+        options:{ plugins:{legend:LEGEND, tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.dataset.yAxisID==='y1'?pct(c.parsed.y):fmt(c.parsed.y)}`}}},
+          maintainAspectRatio:true, interaction:{mode:"index",intersect:false},
+          scales:{ x:{...AXES},
+            y:{...AXES, position:"left", title:{display:true,text:"Absolutwerte",color:"#4b5563"}},
+            y1:{...AXES, position:"right", display:hasRate, grid:{drawOnChartArea:false}, title:{display:true,text:"Raten (%)",color:"#4b5563"}} } } });
+    }
+
+    // Datentabelle — Page (KW × Kanal) oder Content (Beiträge: Galerie oder Tabelle).
+    function buildExplorerTable() {
+      if (S.exp.tableMode!=="content") return buildPageTable();
+      return S.exp.contentView==="gallery" ? buildContentGallery() : buildContentTable();
+    }
+
+    function buildPageTable() {
+      $("exp-table").className="panel"; $("exp-table").style.overflowX="auto";
+      const e=S.exp, rows=[];
+      e.channels.forEach(ch=>expWeeks(ch).forEach(w=>{ const d=derive(w.channels[ch]);
+        const r={ _kw:w.kw, _ch:ch, _ws:w.weekStart, kw:w.kw, channel:NAMES[ch] };
+        e.metrics.forEach(k=> r[k] = metricAvailable(k,ch) ? METRICS[k].get(d) : null);
+        rows.push(r); }));
+      const {key,dir}=e.sort;
+      const val=r=> key==="kw" ? r._ws : key==="channel" ? r.channel : (r[key]??-Infinity);
+      rows.sort((a,b)=>{ const av=val(a), bv=val(b);
+        return typeof av==="string" ? (dir==="asc"?av.localeCompare(bv):bv.localeCompare(av)) : (dir==="asc"?av-bv:bv-av); });
+      const cols = [{key:"kw",label:"KW"},{key:"channel",label:"Kanal"},...e.metrics.map(k=>({key:k,label:METRICS[k].label}))];
+      
+      const headCell = (colKey, label) => {
+        const isActive = key === colKey;
+        const arrow = isActive ? (dir === "asc" ? "▲" : "▼") : "⇅";
+        return `<th class="sortable${isActive ? ' active-sort' : ''}" data-col="${colKey}">${label}<span class="sort-indicator">${arrow}</span></th>`;
+      };
+      const head = headCell("kw", "KW") + headCell("channel", "Kanal") + e.metrics.map(k=>headCell(k, METRICS[k].label)).join("");
+      const body = rows.map(r=>`<tr><td>KW ${r._kw} · ${r._ws.slice(0,4)}</td><td><span class="ch-dot" style="background:${CH_COLOR[r._ch]}"></span>${r.channel}</td>${
+        e.metrics.map(k=>`<td>${r[k]==null?"–":(METRICS[k].format==="rate"?pct(r[k]):fmt(r[k]))}</td>`).join("")}</tr>`).join("");
+      $("exp-table").innerHTML = rows.length ? `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>` : `<p class="hint">Keine Daten für diese Auswahl.</p>`;
+      $("exp-table").querySelectorAll("th.sortable").forEach(th=>th.onclick=()=>{ const k=th.dataset.col;
+        e.sort={key:k, dir:(e.sort.key===k && e.sort.dir==="asc")?"desc":"asc"}; buildPageTable(); });
+    }
+
+    // Alle wählbaren Spalten der Content-Tabelle (Beitrags-Ebene). noSort = Vorschau (nicht sortierbar).
+    const CONTENT_DEFS = [
+      {key:"thumb",   label:"Vorschau",     noSort:true},
+      {key:"date",    label:"Datum",        str:true, fmt:deDate},
+      {key:"channel", label:"Kanal",        str:true},
+      {key:"type",    label:"Format",       str:true},
+      {key:"art",     label:"Art",          str:true},
+      {key:"caption", label:"Beschreibung", str:true},
+      {key:"views",   label:"Views",        fmt:fmt},
+      {key:"reach",   label:"Betrachter",   fmt:fmt},
+      {key:"interactions", label:"Interakt.", fmt:fmt},
+      {key:"er",      label:"ER",           fmt:pct},
+      {key:"likes",   label:"Likes",        fmt:fmt},
+      {key:"comments",label:"Kommentare",   fmt:fmt},
+      {key:"saves",   label:"Saves",        fmt:fmt},
+      {key:"shares",  label:"Shares",       fmt:fmt},
+    ];
+    // Mini-Vorschau (kleines Bild bzw. Platzhalter) für die Tabellen-Zelle.
+    function thumbMini(r) {
+      return r.thumbnail
+        ? `<span class="thumb-mini"><img src="${escHtml(r.thumbnail)}" alt="" loading="lazy"></span>`
+        : `<span class="thumb-mini" style="background:${CH_GRAD[r._ch]||'#888'}"><span class="ph-ic-sm">${FMT_ICON[r.type]||'P'}</span></span>`;
+    }
+    // Eine Tabellenzelle je Spalte (manche brauchen Sonderdarstellung: Bild, Pill, Punkt, Text).
+    function contentCell(r, key) {
+      switch (key) {
+        case "thumb":   return `<td class="td-thumb">${thumbMini(r)}</td>`;
+        case "date":    return `<td>${deDate(r.date)}</td>`;
+        case "channel": return `<td><span class="ch-dot" style="background:${CH_COLOR[r._ch]}"></span>${r.channel}</td>`;
+        case "art":     return `<td><span class="tag-pill ${r.boosted?'paid':'organic'}">${r.art}</span></td>`;
+        case "caption": return `<td class="td-cap" title="${escHtml(r.caption)}">${r.caption?escHtml(r.caption):'—'}</td>`;
+        default: { const def=CONTENT_DEFS.find(c=>c.key===key); const v=r[key];
+          return `<td>${v==null?"–":(def&&def.fmt?def.fmt(v):escHtml(v))}</td>`; }
+      }
+    }
+    // Spalten, die in den Export (CSV/PPT) der Galerie wandern — ohne Bild, mit Beschreibung.
+    const CONTENT_EXPORT_KEYS = ["date","channel","type","art","caption","views","reach","interactions","er","saves","shares"];
+    // Beiträge im gewählten Zeitraum & Kanal — eine Quelle für Galerie, Tabelle & Export.
+    function contentRows() {
+      const e=S.exp, from=e.dateFrom, to=addDays(e.dateTo,6); // bis Wochenende der letzten gewählten KW
+      return (S.posts?.posts||[]).filter(p=>e.channels.includes(p.channel) && p.date>=from && p.date<=to)
+        .map(p=>{ const r=sum(p.reach); return { _ch:p.channel, date:p.date, channel:NAMES[p.channel], type:p.type,
+          art:p.boosted?"Paid":"Organic", boosted:!!p.boosted, caption:p.caption||"", thumbnail:p.thumbnail||null, permalink:p.permalink||null,
+          views:sum(p.views), reach:r, interactions:p.interactions, er:r?p.interactions/r*100:0,
+          likes:p.likes??null, comments:p.comments??null, saves:p.saves||0, shares:p.shares||0 }; });
+    }
+    function buildContentTable() {
+      $("exp-table").className="panel"; $("exp-table").style.overflowX="auto";
+      const e=S.exp, rows=contentRows();
+      const cols = CONTENT_DEFS.filter(c=>e.ccols.includes(c.key));   // nur gewählte Spalten, feste Reihenfolge
+      let {key,dir}=e.csort; let col=CONTENT_DEFS.find(c=>c.key===key);
+      if(!col || col.noSort || !e.ccols.includes(key)){ key="date"; dir="asc"; col=CONTENT_DEFS.find(c=>c.key==="date"); }
+      rows.sort((a,b)=>{ const av=a[key], bv=b[key];
+        if(col.str) return dir==="asc"?String(av).localeCompare(bv):String(bv).localeCompare(av);
+        return dir==="asc"?(av??-Infinity)-(bv??-Infinity):(bv??-Infinity)-(av??-Infinity); });
+      const head = cols.map(c => {
+        if (c.noSort) return `<th>${c.label}</th>`;
+        const isActive = key === c.key;
+        const arrow = isActive ? (dir === "asc" ? "▲" : "▼") : "⇅";
+        return `<th class="sortable${isActive ? ' active-sort' : ''}" data-col="${c.key}">${c.label}<span class="sort-indicator">${arrow}</span></th>`;
+      }).join("");
+      const body = rows.map(r=>`<tr>${cols.map(c=>contentCell(r,c.key)).join("")}</tr>`).join("");
+      $("exp-table").innerHTML = rows.length ? `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`
+        : `<p class="hint">Keine Beiträge in diesem Zeitraum &amp; diesen Kanälen.</p>`;
+      $("exp-table").querySelectorAll("th.sortable").forEach(th=>th.onclick=()=>{ const k=th.dataset.col;
+        e.csort={key:k, dir:(e.csort.key===k && e.csort.dir==="asc")?"desc":"asc"}; buildContentTable(); });
+    }
+
+    // Beitrags-Galerie mit Vorschau (echtes Thumbnail, sonst gestylter Platzhalter je Kanal/Format).
+    const GSORT = { er:"ER (beste zuerst)", views:"Views", reach:"Betrachter", interactions:"Interaktionen", date:"Datum (neueste)" };
+    const CH_GRAD = { instagram:"linear-gradient(135deg,#5b8cff,#2f6bff)", facebook:"linear-gradient(135deg,#34c06a,#15a34a)", youtube:"linear-gradient(135deg,#f43f5e,#e11d48)" };
+    const FMT_ICON = { Reel:"R", Karussell:"C", Bild:"I", Story:"S", Link:"L", Video:"V" };
+    function postCard(r) {
+      const thumb = r.thumbnail
+        ? `<img src="${r.thumbnail}" alt="" loading="lazy">`
+        : `<div class="ph" style="background:${CH_GRAD[r._ch]||'#888'}"><span class="ph-ic">${FMT_ICON[r.type]||'P'}</span></div>`;
+      const link = r.permalink ? ` href="${r.permalink}" target="_blank" rel="noopener"` : "";
+      return `<a class="pcard"${link}>
+        <div class="pthumb">${thumb}<span class="pfmt">${r.type}</span><span class="tag-pill ${r.boosted?'paid':'organic'}">${r.art}</span></div>
+        <div class="pbody">
+          <div class="pcap">${r.caption?escHtml(r.caption):"(ohne Text)"}</div>
+          <div class="pmeta"><span class="ch-dot" style="background:${CH_COLOR[r._ch]}"></span>${r.channel} · ${deDate(r.date)}</div>
+          <div class="pstats">
+            <div><b>${fmt(r.views)}</b><small>Views</small></div><div><b>${fmt(r.reach)}</b><small>Betrachter</small></div>
+            <div><b>${pct(r.er)}</b><small>ER</small></div><div><b>${fmt(r.interactions)}</b><small>Interakt.</small></div>
+          </div>
+        </div></a>`;
+    }
+    function buildContentGallery() {
+      $("exp-table").className=""; $("exp-table").style.overflowX="visible";
+      const k=S.exp.gsort, rows=contentRows();
+      rows.sort((a,b)=> k==="date" ? (a.date<b.date?1:-1) : (b[k]-a[k]));
+      $("exp-table").innerHTML = rows.length ? `<div class="pgrid">${rows.map(postCard).join("")}</div>`
+        : `<p class="hint">Keine Beiträge in diesem Zeitraum &amp; diesen Kanälen.</p>`;
+    }
+
+    const PAL = ["#2f6bff","#15a34a","#f97316","#e11d48","#9333ea","#0891b2","#ca8a04"];
+    const AXES = {
+      grid: { color: "rgba(17, 24, 39, 0.08)", drawTicks: false },
+      ticks: { color: "#374151", font: { family: "-apple-system, 'Segoe UI', system-ui, sans-serif", size: 11 } },
+      border: { display: false }
+    };
+    const LEGEND = {
+      labels: {
+        color: "#1f2937",
+        usePointStyle: true,
+        boxWidth: 8,
+        font: { family: "-apple-system, 'Segoe UI', system-ui, sans-serif", size: 12, weight: 600 }
+      }
+    };
+
+    function hexToRgbA(hex, alpha) {
+      let c;
+      if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
+        c= hex.substring(1).split('');
+        if(c.length== 3){ c= [c[0], c[0], c[1], c[1], c[2], c[2]]; }
+        c= '0x' + c.join('');
+        return 'rgba('+[(c>>16)&255, (c>>8)&255, c&255].join(',')+','+alpha+')';
+      }
+      return 'rgba(79,107,255,'+alpha+')';
+    }
+
+    function getGradient(ctx, color) {
+      const g = ctx.createLinearGradient(0, 0, 0, 350);
+      g.addColorStop(0, hexToRgbA(color, 0.16));
+      g.addColorStop(1, hexToRgbA(color, 0.00));
+      return g;
+    }
+
+    function newChart(canvas, config) {
+      if(!canvas) return;
+      if(S.chartById[canvas.id]) S.chartById[canvas.id].destroy();
+      config.options = config.options || {};
+      config.options.animation = false;
+      config.options.responsive = true;
+      S.chartById[canvas.id] = new Chart(canvas, config);
+    }
+    // Welche Metriken im Vergleichs-Chart wählbar sind.
+    const CMP_KEYS = ["reach","views","interactions","erReach","erFollower","saves","shares","followersGained","growthRate","reachRate","linkTapRate"];
+    // Generisches Vergleichs-Chart: Linien je Metrik über eine beliebige Zeitachse (Woche/Monat/Quartal).
+    function lineCompare(canvas, labels, derivedList, sel, ch) {
+      const keys = sel.filter(k=>metricAvailable(k,ch));
+      const hasRate = keys.some(k=>METRICS[k].format==="rate");
+      const ctx = canvas.getContext('2d');
+      const datasets = keys.map((k,i)=>{
+        const m=METRICS[k];
+        const color=PAL[i%PAL.length];
+        
+        let bg = "transparent";
+        let fill = false;
+        if (keys.length <= 2) {
+          bg = ctx ? getGradient(ctx, color) : "transparent";
+          fill = true;
+        }
+
+        return {
+          label: m.label,
+          data: derivedList.map(d=>m.get(d)),
+          borderColor: color,
+          backgroundColor: bg,
+          fill: fill,
+          tension: 0.4,
+          borderWidth: 2.5,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: color,
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
+          yAxisID: m.format==="rate"?"y1":"y"
+        };
+      });
+      newChart(canvas, { type:"line", data:{labels,datasets},
+        options:{ maintainAspectRatio:true, interaction:{mode:"index",intersect:false},
+          plugins:{ legend:LEGEND, tooltip:{ callbacks:{ label: c => `${c.dataset.label}: ${METRICS[keys[c.datasetIndex]].format==="rate"?pct(c.parsed.y):fmt(c.parsed.y)}` } } },
+          scales:{ x:{...AXES, grid:{display:false}},
+            y:{...AXES, position:"left", ticks:{...AXES.ticks, callback:v=>fmt(v)}, title:{display:true,text:"Absolutwerte",color:"#4b5563"}},
+            y1:{...AXES, position:"right", display:hasRate, grid:{drawOnChartArea:false}, ticks:{...AXES.ticks, callback:v=>pct(v)}, title:{display:true,text:"Raten (%)",color:"#4b5563"}} } } });
+    }
+    function drawCompare(weeks) { lineCompare($("c-compare"), weeks.map(w=>"KW "+w.kw), weeks.map(w=>derive(w.channels[S.channel])), S.cmp, S.channel); }
+    // Generischer Organic-vs-Paid-Balken/Linien über eine beliebige Zeitachse.
+    function barSplit(canvas, labels, aggList, k, mode = "stacked") {
+      const type = mode === "line" ? "line" : "bar";
+      const isStacked = mode === "stacked";
+      
+      const datasets = [
+        {
+          label: "Organic",
+          data: aggList.map(a => a[k] ? a[k].organic : 0),
+          borderColor: "#2f6bff",
+          backgroundColor: type === "line" ? "transparent" : "#2f6bff",
+          borderWidth: type === "line" ? 2.5 : 0,
+          borderRadius: type === "line" ? 0 : 5,
+          tension: type === "line" ? 0.4 : 0,
+          fill: false,
+          pointRadius: type === "line" ? 3 : 0,
+          pointHoverRadius: type === "line" ? 5 : 0,
+          pointBackgroundColor: "#2f6bff",
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2
+        },
+        {
+          label: "Paid",
+          data: aggList.map(a => a[k] ? a[k].paid : 0),
+          borderColor: "#f97316",
+          backgroundColor: type === "line" ? "transparent" : "#f97316",
+          borderWidth: type === "line" ? 2.5 : 0,
+          borderRadius: type === "line" ? 0 : 5,
+          tension: type === "line" ? 0.4 : 0,
+          fill: false,
+          pointRadius: type === "line" ? 3 : 0,
+          pointHoverRadius: type === "line" ? 5 : 0,
+          pointBackgroundColor: "#f97316",
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2
+        }
+      ];
+
+      newChart(canvas, {
+        type: type,
+        data: { labels, datasets },
+        options: {
+          maintainAspectRatio: true,
+          plugins: {
+            legend: LEGEND,
+            tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmt(c.parsed.y)}` } }
+          },
+          scales: {
+            x: { stacked: isStacked, ...AXES, grid: { display: false } },
+            y: { stacked: isStacked, ...AXES, ticks: { ...AXES.ticks, callback: v => fmt(v) } }
+          }
+        }
+      });
+    }
+    function drawSplitSel(weeks) { barSplit($("c-split"), weeks.map(w=>"KW "+w.kw), weeks.map(w=>w.channels[S.channel]), S.splitMetric, S.splitType); }
+
+    // ──────────────────────────────────────────────────────────────────────
+    //  ENDPOINTS-SEITE — Graph-API-Feldnamen in der UI anpassen
+    // ──────────────────────────────────────────────────────────────────────
+    function renderEndpoints() {
+      const c = $("content");
+      c.innerHTML = `<div class="panel"><p class="hint">lädt…</p></div>`;
+      fetch("/api/endpoints").then(r => r.json()).then(data => {
+        S.epData = data;
+        const groups = data.fields.map(g => {
+          const rows = g.items.map(it => {
+            const cur = data.current[it.key] ?? "";
+            const def = data.defaults[it.key] ?? "";
+            const changed = cur !== def;
+            return `
+              <div class="ep-row">
+                <label class="ep-label" for="ep-${it.key}">${escHtml(it.label)}${changed?` <span class="ep-badge">geändert</span>`:""}</label>
+                <input class="ep-input" id="ep-${it.key}" data-ep="${it.key}" value="${escHtml(cur)}" spellcheck="false" autocomplete="off">
+                <div class="ep-meta">
+                  ${it.hint?`<span class="ep-hint">${escHtml(it.hint)}</span>`:""}
+                  <span class="ep-default">Standard: <code>${escHtml(def)}</code> ${changed?`· <a href="#" class="ep-reset" data-reset="${it.key}">zurücksetzen</a>`:""}</span>
+                </div>
+              </div>`;
+          }).join("");
+          return `<div class="panel ep-group"><h2 class="section-title">${escHtml(g.group)}</h2>${rows}</div>`;
+        }).join("");
+
+        c.innerHTML = `
+          <div class="panel" style="border-left:4px solid var(--accent,#4f6bff);">
+            <h2 class="section-title">Graph-API-Feldnamen anpassen</h2>
+            <p class="hint" style="margin:6px 0 0;">
+              Hier stehen die <b>technischen Feldnamen</b>, die das Dashboard bei Meta abfragt.
+              Meta benennt diese ab und zu um (z. B. die <b>Reichweite→Viewer-Umstellung am 15.06.2026</b>).
+              Wenn nach einem Abruf ein Wert <b>0</b> bleibt und im Protokoll
+              (<code>data/last-fetch-debug.json</code>) „metric … is not valid“ steht,
+              trägst du hier den neuen Namen ein — <b>ohne in den Code zu müssen</b>.
+            </p>
+            <p class="hint" style="margin:8px 0 0;">
+              ⚠️ Änderungen greifen beim <b>nächsten „Daten aktualisieren“</b>. Leeres Feld = es gilt wieder der Standard.
+              Mehrere Felder (z. B. das FB-Bündel) werden mit Komma getrennt.
+            </p>
+          </div>
+          ${groups}
+          <div class="panel ep-savebar">
+            <button class="btn primary" id="ep-save">Speichern</button>
+            <button class="btn" id="ep-reset-all">Alles auf Standard zurücksetzen</button>
+            <span class="ep-feedback hint" id="ep-feedback"></span>
+          </div>`;
+
+        // ── Verdrahtung ──
+        c.querySelectorAll(".ep-reset").forEach(a => a.onclick = (ev) => {
+          ev.preventDefault();
+          const k = a.dataset.reset;
+          const inp = c.querySelector(`[data-ep="${k}"]`);
+          if (inp) inp.value = data.defaults[k] ?? "";
+        });
+        $("ep-save").onclick = async () => {
+          const body = {};
+          c.querySelectorAll("[data-ep]").forEach(inp => { body[inp.dataset.ep] = inp.value.trim(); });
+          const fb = $("ep-feedback");
+          fb.textContent = "⏳ speichere…";
+          try {
+            const r = await (await fetch("/api/endpoints", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) })).json();
+            if (r.ok) { fb.textContent = `✓ gespeichert (${r.saved} angepasst). Wirkt beim nächsten Datenabruf.`; renderEndpoints(); }
+            else fb.textContent = "✖ " + (r.error || "Fehler beim Speichern");
+          } catch(e) { fb.textContent = "✖ " + e.message; }
+        };
+        $("ep-reset-all").onclick = async () => {
+          const fb = $("ep-feedback");
+          fb.textContent = "⏳ setze zurück…";
+          try {
+            await (await fetch("/api/endpoints", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({}) })).json();
+            renderEndpoints();
+          } catch(e) { fb.textContent = "✖ " + e.message; }
+        };
+      }).catch(e => { c.innerHTML = `<div class="panel"><p class="hint">Endpoints konnten nicht geladen werden: ${escHtml(e.message)}</p></div>`; });
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    //  DOKU-SEITE — was man sieht & wie es gebaut ist
+    // ──────────────────────────────────────────────────────────────────────
+    function renderDoku() {
+      $("content").innerHTML = `
+        <div class="panel doku">
+          <h2 class="section-title">Was ist dieses Dashboard?</h2>
+          <p>Ein <b>lokales Reporting-Werkzeug</b> für eure Social-Media-Kanäle (Instagram, Facebook,
+          YouTube). Es holt die Kennzahlen direkt bei Meta, <b>speichert sie auf diesem Rechner</b> und
+          bereitet sie als Wochen-, Monats- und Quartalsreport auf. Es läuft komplett bei dir —
+          keine Cloud, kein fremder Server.</p>
+        </div>
+
+        <div class="panel doku">
+          <h2 class="section-title">Was du siehst — die Navigation</h2>
+          <ul>
+            <li><b>Report</b> — der Kern. Oben schaltest du zwischen <b>Woche / Monat / Quartal</b> um und
+            wählst über das <b>Zeitraum-Menü</b> eine bestimmte Periode. Darunter:
+              <ul>
+                <li><b>KPI-Karten</b> in einem Funnel (Sichtbarkeit → Interaktion → Conversion → Wachstum → Video).
+                Jede Karte hat ein <b>ℹ️</b> mit Erklärung und Formel. Karten lassen sich per
+                <b>Ziehen &amp; Ablegen</b> umsortieren (die Reihenfolge wird gemerkt).</li>
+                <li><b>Vergleichs-Diagramme</b> (mehrere Kennzahlen, Zweitachse für Raten),
+                <b>Organisch/Bezahlt-Aufteilung</b>, <b>Engagement-Zusammensetzung</b> und <b>Format-Analyse</b>.</li>
+                <li><b>Sortierbare Tabellen</b> aller Perioden.</li>
+                <li><b>Export</b> oben rechts: <b>Excel</b>, <b>PDF</b>, <b>PowerPoint</b> — immer die gerade sichtbare Ansicht.</li>
+              </ul>
+            </li>
+            <li><b>Explorer</b> — freies Stöbern: mehrere Kanäle gleichzeitig, eigener Zeitraum, frei wählbare
+            Kennzahlen, und die <b>Inhalte</b>-Ebene als <b>Galerie</b> (Beiträge mit Vorschaubild) oder
+            anpassbare <b>Tabelle</b>.</li>
+            <li><b>Endpoints</b> — die technischen Meta-Feldnamen anpassen, falls Meta etwas umbenennt
+            (z. B. die Reichweiten-Umstellung). So musst du nie in den Code.</li>
+            <li><b>Doku</b> — diese Seite.</li>
+          </ul>
+        </div>
+
+        <div class="panel doku">
+          <h2 class="section-title">Die Kennzahlen — kurz erklärt</h2>
+          <ul>
+            <li><b>Betrachter (Reichweite)</b> — wie viele <i>Menschen</i> Inhalte gesehen haben (Meta zählt das seit 2026 als „Unique Viewer“).</li>
+            <li><b>Views (Aufrufe)</b> — wie oft Inhalte aufgerufen wurden (kann pro Person mehrfach zählen).</li>
+            <li><b>Interaktionen</b> — Likes, Kommentare, Shares, Saves zusammen.</li>
+            <li><b>ER (Engagement-Rate)</b> — Interaktionen im Verhältnis zu Reichweite bzw. Followern.</li>
+            <li><b>Follower dazu / Wachstumsrate</b> — neue Follower und ihr Anteil am Bestand.</li>
+          </ul>
+          <p class="hint">Genaue Definition + Formel steht überall hinter dem <b>ℹ️</b> direkt an der Kennzahl.</p>
+        </div>
+
+        <div class="panel doku">
+          <h2 class="section-title">Wie die Daten reinkommen</h2>
+          <ol>
+            <li><b>Verbinden</b> (Knopf „Verbindung“): Page-ID + Token eintragen — wird sofort gegen Meta geprüft.</li>
+            <li><b>Sammeln</b> (Knopf „Daten aktualisieren“): holt die laufende Woche und <b>speichert sie lokal</b>.</li>
+            <li><b>Anzeigen</b>: das Dashboard liest danach nur noch die lokalen Dateien — schnell und offline.</li>
+          </ol>
+          <p>⚠️ <b>Wichtig:</b> Meta liefert <b>vergangene Wochen nicht nach</b>. Deshalb musst du
+          <b>jede Woche einmal sammeln</b> — sonst fehlt die Woche für immer. Das orange Banner erinnert dich.</p>
+        </div>
+
+        <div class="panel doku">
+          <h2 class="section-title">Wie es gebaut ist (Technik)</h2>
+          <ul>
+            <li><b>Anzeige</b>: eine einzige HTML-Datei (<code>dashboard/public/index.html</code>) mit Diagrammen über Chart.js.</li>
+            <li><b>Server</b>: ein kleiner lokaler Node-Server (<code>dashboard/server.js</code>) <b>ohne externe Abhängigkeiten</b> — robust unter Windows.</li>
+            <li><b>Abruf</b>: <code>src/meta.js</code> spricht die <b>Meta Graph API v25.0</b> an (Version fest gepinnt in <code>src/config.js</code>).</li>
+            <li><b>Speicher</b>: einfache JSON-Dateien im Ordner <code>data/</code>. Deine Zugänge liegen getrennt in <code>config.local.json</code>.</li>
+            <li><b>Robust</b>: schlägt ein einzelnes Feld fehl, wird es 0 + Protokoll-Eintrag, statt alles abzubrechen.</li>
+          </ul>
+        </div>
+
+        <div class="panel doku">
+          <h2 class="section-title">Ausbaustufen</h2>
+          <ul>
+            <li>✅ <b>Phase 1</b> — Wochen-/Monats-/Quartalsreport für FB &amp; IG (läuft).</li>
+            <li>⏳ <b>Phase 2</b> — echte Beitrags-Insights (Interaktionen/Saves/Shares je Beitrag, echte Vorschaubilder).</li>
+            <li>⏳ <b>Phase 3</b> — Werbe-API für echten Organisch/Bezahlt-Split.</li>
+            <li>⏳ <b>Phase 4</b> — YouTube (eigene Google-Anbindung).</li>
+          </ul>
+          <p class="hint">Mehr Details in den Projektdateien <code>GO-LIVE.md</code>, <code>HANDOFF.md</code>,
+          <code>ENDPOINTS.md</code> und <code>AUDIT.md</code>.</p>
+        </div>
+
+        <div class="panel doku">
+          <h2 class="section-title">Datensicherung</h2>
+          <p>Alles liegt nur lokal in <code>data/</code>. Kopiere diesen Ordner ab und zu auf einen
+          USB-Stick oder eine externe Platte — geht er verloren, ist der gesammelte Verlauf weg
+          (Meta liefert ihn nicht erneut).</p>
+        </div>`;
+    }
+
+    function fadeAndRestoreScroll(scrollY) {
+      const contentEl = $("content");
+      contentEl.classList.remove("fade-in");
+      void contentEl.offsetWidth; // reflow trigger
+      contentEl.classList.add("fade-in");
+      requestAnimationFrame(() => requestAnimationFrame(() => { window.scrollTo(0, scrollY); }));
+    }
+
+    function render() {
+      const scrollY = window.scrollY;
+      killCharts();
+
+      // ── Seiten ohne Daten-Abhängigkeit (funktionieren auch beim Erst-Setup) ──
+      if (S.tab === "endpoints" || S.tab === "doku") {
+        renderChannels(); // blendet den Kanal-Wähler aus (nur Report nutzt ihn)
+        $("control-bar").style.display = "none";
+        $("export-bar").style.display = "none";
+        $("period-selector-wrapper").style.display = "none";
+        $("control-center").style.marginBottom = "16px";
+        document.body.dataset.platform = "";
+        $("page-title").textContent = S.tab === "endpoints" ? "Endpoints anpassen" : "Doku & Aufbau";
+        if (S.tab === "endpoints") renderEndpoints(); else renderDoku();
+        fadeAndRestoreScroll(scrollY);
+        return;
+      }
+      // Für normale Tabs Export-Leiste + Zeitraum wieder einblenden.
+      $("export-bar").style.display = "flex";
+      $("period-selector-wrapper").style.display = "flex";
+
+      if (!S.data || !S.data.weeks || S.data.weeks.length === 0) {
+        $("content").innerHTML = emptyStateHtml(
+          "Keine Daten vorhanden",
+          "Es konnten keine Social-Media-Daten geladen werden. Bitte überprüfe die Verbindung oder lade die Demo-Daten.",
+          true,
+          true
+        );
+        return;
+      }
+      renderChannels();
+
+      const isExp = S.tab === "explorer";
+      $("control-bar").style.display = isExp ? "none" : "flex";
+      $("control-center").style.marginBottom = isExp ? "16px" : "24px";
+      
+      // Karten dezent in der Farbe der aktuell gewählten Plattform tönen (Quartal: „all" → neutral).
+      document.body.dataset.platform = isExp ? "" : (S.gran==="quarter" ? S.qChannel : S.channel);
+      $("page-title").textContent = isExp ? TITLES.explorer : TITLES[S.gran];
+      if (isExp) renderExplorer();
+      else if (S.gran==="week") renderWeek();
+      else if (S.gran==="month") renderMonth();
+      else renderQuarter();
+
+      // Fade-in Animation auf Content-Bereich
+      const contentEl = $("content");
+      contentEl.classList.remove("fade-in");
+      void contentEl.offsetWidth; // reflow trigger
+      contentEl.classList.add("fade-in");
+
+      // Double rAF: ensures scroll restore fires after fade-in reflow so page doesn't jump
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        window.scrollTo(0, scrollY);
+      }));
+    }
+
+    function renderChannels() {
+      if (!S.data || !S.data.weeks || S.data.weeks.length === 0) {
+        const el = $("channels");
+        if (el) el.style.display = "none";
+        return;
+      }
+      const chans = Object.keys(S.data.weeks[0].channels), el=$("channels");
+      if (S.tab!=="report") { el.style.display="none"; return; }
+      el.style.display="inline-flex";
+      if (S.tab==="report" && S.gran==="quarter") {
+        // Quartal: Plattform-Filter inkl. „Alle Kanäle".
+        const opts = [["all","Alle Kanäle"], ...chans.map(c=>[c, NAMES[c]||c])];
+        el.innerHTML = opts.map(([v,l]) => `<button data-qch="${v}" class="${v===S.qChannel?"active":""}">${l}</button>`).join("");
+        el.querySelectorAll("button").forEach(b => b.onclick = () => { S.qChannel=b.dataset.qch; render(); });
+      } else {
+        el.innerHTML = chans.map(c => `<button data-ch="${c}" class="${c===S.channel?"active":""}">${NAMES[c]||c}</button>`).join("");
+        el.querySelectorAll("button").forEach(b => b.onclick = () => { S.channel=b.dataset.ch; render(); });
+      }
+    }
+
+    function applyStatus() {
+      const st = S.status, el = $("conn");
+      if (st?.configured) { el.className="conn live"; el.innerHTML = `● Verbunden<b>${st.pageName||""}${st.igUsername?" · @"+st.igUsername:""}</b>`; }
+      else { el.className="conn"; el.innerHTML = `● Nicht verbunden<b>Beispiel-Daten</b>`; }
+      renderTokenBanner();
+    }
+    // Warnt rechtzeitig vor dem Token-Ablauf (ab 7 Tagen vorher), damit das
+    // Reporting nicht still stehen bleibt. Tageswerte kommen aus /api/status.
+    function renderTokenBanner(){ const el=$("token-banner"); if(!el) return;
+      const st=S.status, d=st?.tokenDaysLeft;
+      if(!st?.configured || d==null || d>7){ el.className=""; el.innerHTML=""; return; }
+      const exp=st.tokenExpiresAt?new Date(st.tokenExpiresAt).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"}):"";
+      const expired=d<=0;
+      const head=expired ? `Zugang abgelaufen — bitte erneuern.` : `Zugang läuft in ${d} ${d===1?"Tag":"Tagen"} ab${exp?" (am "+exp+")":""}.`;
+      const sub=st.tokenEstimated ? `Geschätzt (langlebiger Token ~60 Tage). ` : "";
+      el.className="reminder";
+      el.innerHTML=`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff9d5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        <div class="r-txt"><b>${head}</b> ${sub}Danach kommen keine neuen Daten mehr. So erneuerst du den Zugang: Schritt „Token erneuern" in <b>GO-LIVE.md</b> — dann auf <b>Verbindung</b> klicken und den neuen Token eintragen.</div>
+        <button class="btn primary" id="tb-conn">Verbindung öffnen</button>`;
+      const b=$("tb-conn"); if(b) b.onclick=()=>$("overlay").classList.add("open");
+    }
+    async function refreshData() {
+      const [d,p] = await Promise.all([fetch("/api/data"), fetch("/api/posts")]);
+      S.data = await d.json(); S.posts = await p.json();
+      renderChannels(); render(); renderReminder();
+    }
+    async function loadStatus() { S.status = await (await fetch("/api/status")).json(); applyStatus(); }
+
+    // ═══ Schritt 5: Wöchentliche Sammel-Erinnerung — Meta liefert alte Wochen nicht nach ═══
+    const ymd = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    function mondayOf(d){ const x=new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate()-((x.getDay()+6)%7)); return x; } // Montag der ISO-Woche
+    function isoWeek(date){ const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));
+      d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7)+3); const firstThu=new Date(Date.UTC(d.getUTCFullYear(),0,4));
+      return 1+Math.round((d-firstThu)/(7*864e5)); }
+    // Status: welche abgeschlossenen Wochen fehlen seit der letzten gespeicherten?
+    function collectionStatus(){
+      const weeks=S.data?.weeks||[]; if(!weeks.length) return null;
+      const lastWs=weeks.map(w=>w.weekStart).sort().at(-1), lastW=weeks.find(w=>w.weekStart===lastWs);
+      const thisMon=mondayOf(new Date());
+      const lastCompletedMon=new Date(thisMon); lastCompletedMon.setDate(lastCompletedMon.getDate()-7); // letzte abgeschlossene Woche
+      const have=new Set(weeks.map(w=>w.weekStart)), missing=[];
+      let cur=new Date(lastWs); cur.setDate(cur.getDate()+7);
+      while(ymd(cur)<=ymd(lastCompletedMon)){ if(!have.has(ymd(cur))) missing.push({ws:ymd(cur),kw:isoWeek(cur)}); cur.setDate(cur.getDate()+7); }
+      const nextDue=new Date(thisMon); nextDue.setDate(nextDue.getDate()+(missing.length?0:7)); // überfällig=jetzt, sonst nächster Montag
+      return { state: missing.length?"overdue":"ok", lastKw:lastW.kw, lastYear:lastW.year, lastWs, missing, nextDue, lastCompletedMon };
+    }
+    function updateCollectStatus(st){ const el=$("collect-status"); if(!el) return;
+      if(!st){ el.style.display="none"; return; } el.style.display="block";
+      if(st.state==="overdue"){ el.className="conn warn"; el.innerHTML=`Sammlung fällig<b>${st.missing.map(m=>"KW "+m.kw).join(", ")} offen</b>`; }
+      else { const due=st.nextDue.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"});
+        el.className="conn live"; el.innerHTML=`Daten aktuell<b>bis KW ${st.lastKw} · nächste: ${due}</b>`; } }
+    function renderReminder(){ const el=$("reminder"); if(!el) return; const st=collectionStatus(); updateCollectStatus(st);
+      const dueKey=st&&st.lastCompletedMon?ymd(st.lastCompletedMon):"";
+      if(!st || st.state!=="overdue" || localStorage.getItem("remind-dismiss")===dueKey){ el.className=""; el.innerHTML=""; return; }
+      const kws=st.missing.map(m=>"KW "+m.kw).join(", ");
+      el.className="reminder";
+      el.innerHTML=`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff9d5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <div class="r-txt"><b>Datensammlung fällig — ${kws} ${st.missing.length>1?"fehlen":"fehlt"} noch.</b>
+          Meta liefert vergangene Wochen <b>nicht</b> nach — bitte zeitnah sammeln, sonst entsteht eine dauerhafte Datenlücke.</div>
+        <button class="btn primary" id="r-collect">⟳ Jetzt sammeln</button>
+        <button class="r-x" id="r-dismiss" title="Bis nächste Woche ausblenden">×</button>`;
+      $("r-collect").onclick=ev=>collectNow(ev.target);
+      $("r-dismiss").onclick=()=>{ localStorage.setItem("remind-dismiss",dueKey); renderReminder(); };
+    }
+
+    // ═══ Schritt 4: Export (Excel/CSV · PDF · PowerPoint) — liest die sichtbare Ansicht aus ═══
+    // Sauberer Text eines Elements ohne Steuer-Schnipsel (Info-Icon, Sortierpfeil, Hinweise).
+    function nodeText(el){ if(!el) return ""; const c=el.cloneNode(true); c.querySelectorAll(".info,.tip,.arr,.hint").forEach(x=>x.remove()); return c.textContent.replace(/\s+/g," ").trim(); }
+    // Überschrift zu einer Tabelle/Canvas finden (Panel-h2 oder vorausgehender Abschnittstitel).
+    function blockTitle(el){ const panel=el.closest(".panel");
+      if(panel){ const h=panel.querySelector("h2"); if(h) return nodeText(h); }
+      let prev=(panel||el).previousElementSibling;
+      while(prev){ if(prev.matches("h2,.section-title")) return nodeText(prev);
+        const inner=prev.querySelector&&prev.querySelector("h2,.section-title"); if(inner) return nodeText(inner);
+        prev=prev.previousElementSibling; }
+      return "Daten"; }
+    function reportMeta(){ let t = S.tab==="explorer" ? TITLES.explorer : TITLES[S.gran];
+      if(S.tab!=="explorer"){ if(S.curLabel) t+=" · "+S.curLabel;
+        if(S.gran==="quarter"){ if(S.qChannel!=="all") t+=" · "+NAMES[S.qChannel]; }
+        else t+=" · "+NAMES[S.channel]; }
+      return { title:t, date:new Date().toLocaleDateString("de-DE") }; }
+    function collectKpis(){ return [...$("content").querySelectorAll(".kpi")].map(k=>({
+      label:nodeText(k.querySelector(".label")), value:nodeText(k.querySelector(".value")), delta:nodeText(k.querySelector(".delta-badge")) })); }
+    function collectTables(){
+      const tables = [...$("content").querySelectorAll("table")].map(t=>({
+        name:blockTitle(t), head:[...t.querySelectorAll("thead th")].map(nodeText),
+        rows:[...t.querySelectorAll("tbody tr")].map(tr=>[...tr.children].map(nodeText)) }));
+      // Beitrags-Galerie hat keine <table> → Daten für den Export synthetisch ergänzen.
+      if (S.tab==="explorer" && S.exp.tableMode==="content" && S.exp.contentView==="gallery") {
+        const rows = contentRows(), defs = CONTENT_EXPORT_KEYS.map(k=>CONTENT_DEFS.find(c=>c.key===k));
+        if (rows.length) tables.push({ name:"📋 Beiträge", head:defs.map(c=>c.label),
+          rows:rows.map(r=>defs.map(c=>{ const v=r[c.key]; return v==null?"":(c.fmt?c.fmt(v):v); })) });
+      }
+      return tables;
+    }
+    function collectCharts(){ return [...$("content").querySelectorAll("canvas")].map(cv=>{
+      const ch=S.chartById[cv.id]; if(!ch) return null; return { title:blockTitle(cv), img:ch.toBase64Image("image/png",1) }; }).filter(Boolean); }
+    function expFilename(m,ext){ return (m.title+" "+m.date).replace(/[·\\/:*?"<>|]+/g," ").replace(/\s+/g," ").trim().replace(/\./g,"-").slice(0,90)+"."+ext; }
+    function download(content,type,name){ const u=URL.createObjectURL(new Blob([content],{type})); const a=document.createElement("a");
+      a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1500); }
+
+    // Excel/CSV: ; als Trenner + UTF-8-BOM → öffnet direkt in deutschem Excel.
+    function exportCSV(){ const m=reportMeta(), L=[];
+      L.push([m.title]); L.push(["Stand",m.date]); L.push([]);
+      const kp=collectKpis(); if(kp.length){ L.push(["Kennzahl","Wert","Veränderung"]); kp.forEach(x=>L.push([x.label,x.value,x.delta])); L.push([]); }
+      collectTables().forEach(tb=>{ L.push([tb.name]); L.push(tb.head); tb.rows.forEach(r=>L.push(r)); L.push([]); });
+      const esc=v=>{ v=(v??"").toString(); return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+      download("﻿"+L.map(r=>r.map(esc).join(";")).join("\r\n"), "text/csv;charset=utf-8", expFilename(m,"csv")); }
+
+    // PDF: Druck-Kopf füllen, Browser-Druckdialog (→ „Als PDF speichern“). Druck-CSS blendet Bedienelemente aus.
+    function exportPDF(){ const m=reportMeta();
+      $("print-head").innerHTML = `<h2>${m.title}</h2><div class="sub">Social-Media Reporting · Stand ${m.date}</div>`;
+      window.print(); }
+
+    // PowerPoint: echte .pptx via PptxGenJS (CDN). Titel- + KPI-Folie, Chart-Bilder, Tabellen.
+    async function exportPPT(btn){
+      if(typeof PptxGenJS==="undefined"){ alert("PowerPoint-Export braucht die Online-Bibliothek (Internet). Bitte Seite neu laden und erneut versuchen."); return; }
+      const m=reportMeta(), pptx=new PptxGenJS(); pptx.layout="LAYOUT_16x9"; // 13.3 × 7.5 Zoll
+      const BLUE="2F6BFF", DARK="111418", GREY="6B7280", LINE="E6E8EC";
+      // Titelfolie
+      let s=pptx.addSlide(); s.background={color:"FFFFFF"};
+      s.addShape(pptx.ShapeType.rect,{x:0,y:0,w:13.33,h:0.25,fill:{color:BLUE}});
+      s.addText(m.title,{x:0.7,y:2.4,w:12,h:1.1,fontSize:40,bold:true,color:DARK});
+      s.addText("Social-Media Reporting · Stand "+m.date,{x:0.7,y:3.5,w:12,h:0.5,fontSize:18,color:GREY});
+      // KPI-Folie
+      const kp=collectKpis();
+      if(kp.length){ s=pptx.addSlide(); s.addText("Kennzahlen",{x:0.7,y:0.4,w:12,fontSize:26,bold:true,color:DARK});
+        kp.slice(0,16).forEach((x,i)=>{ const col=i%4, row=Math.floor(i/4), X=0.7+col*3.05, Y=1.3+row*1.45;
+          const dc = /↑|\+/.test(x.delta)?"15A34A" : /↓|−/.test(x.delta)?"DC2626" : GREY;
+          s.addShape(pptx.ShapeType.roundRect,{x:X,y:Y,w:2.9,h:1.25,fill:{color:"F7F9FC"},line:{color:LINE,width:1},rectRadius:0.08});
+          s.addText([{text:x.label+"\n",options:{fontSize:10,color:GREY}},{text:x.value,options:{fontSize:22,bold:true,color:DARK}},
+            {text:x.delta?"  "+x.delta:"",options:{fontSize:10,color:dc}}],{x:X+0.15,y:Y+0.12,w:2.6,h:1,valign:"top",align:"left"}); }); }
+      // Chart-Folien
+      collectCharts().forEach(c=>{ s=pptx.addSlide(); s.addText(c.title,{x:0.7,y:0.4,w:12,fontSize:22,bold:true,color:DARK});
+        s.addImage({data:c.img,x:0.9,y:1.3,w:11.5,h:5.6}); });
+      // Tabellen-Folien
+      collectTables().forEach(tb=>{ if(!tb.head.length) return; s=pptx.addSlide(); s.addText(tb.name,{x:0.7,y:0.4,w:12,fontSize:20,bold:true,color:DARK});
+        const rows=[tb.head.map(h=>({text:h,options:{bold:true,color:DARK,fill:{color:"EEF3FF"}}}))]
+          .concat(tb.rows.slice(0,16).map(r=>r.map(c=>({text:c,options:{color:DARK}}))));
+        s.addTable(rows,{x:0.7,y:1.2,w:11.9,fontSize:11,border:{type:"solid",color:LINE,pt:1},align:"left",valign:"middle"}); });
+      await pptx.writeFile({ fileName:expFilename(m,"pptx") });
+    }
+
+    async function doExport(kind, btn){
+      const orig=btn.textContent; btn.disabled=true;
+      try {
+        if(kind==="csv"){ exportCSV(); }
+        else if(kind==="pdf"){ exportPDF(); }
+        else if(kind==="ppt"){ btn.textContent="⏳ erstelle…"; await exportPPT(btn); }
+        btn.textContent="✓ fertig";
+      } catch(e){ console.error(e); btn.textContent="✖ Fehler"; }
+      setTimeout(()=>{ btn.disabled=false; btn.textContent=orig; }, 1800);
+    }
+    document.querySelectorAll("#export-bar button").forEach(b=>b.onclick=()=>doExport(b.dataset.exp,b));
+
+    $("btn-settings").onclick = () => $("overlay").classList.add("open");
+    $("btn-close").onclick = () => $("overlay").classList.remove("open");
+    $("btn-connect").onclick = async () => {
+      const pageId=$("in-pageid").value.trim(), token=$("in-token").value.trim();
+      const box=$("connect-result"); box.className="result"; box.textContent="";
+      if(!pageId||!token){ box.className="result err"; box.textContent="Bitte Page-ID und Token eingeben."; return; }
+      $("btn-connect").disabled=true; $("btn-connect").textContent="Teste…";
+      try {
+        const r = await (await fetch("/api/connect",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pageId,token})})).json();
+        if(r.ok===false || r.error){ box.className="result err"; box.textContent=(r.error||"Verbindung fehlgeschlagen")+(r.code?" (#"+r.code+")":""); }
+        else { box.className="result ok"; box.innerHTML = `Verbunden mit <b>${r.pageName}</b>${r.igUsername?` und <b>@${r.igUsername}</b>`:""}.<br>Fenster schließen und <b>„Daten aktualisieren"</b> klicken.`; await loadStatus(); }
+      } catch(e){ box.className="result err"; box.textContent=e.message; }
+      $("btn-connect").disabled=false; $("btn-connect").textContent="Verbinden & Testen";
+    };
+    // Daten sammeln (vom Sidebar-Button & vom Erinnerungs-Banner genutzt).
+    async function collectNow(triggerBtn){
+      if (triggerBtn && triggerBtn.preventDefault) {
+        triggerBtn = triggerBtn.currentTarget || triggerBtn.target;
+      }
+      if(!S.status?.configured){ $("overlay").classList.add("open"); return; }
+      const refreshBtn = $("btn-refresh");
+      const buttons = [refreshBtn];
+      if (triggerBtn && triggerBtn !== refreshBtn) buttons.push(triggerBtn);
+      buttons.forEach(btn => { btn.disabled=true; btn.textContent="Hole Daten…"; });
+      try { const r = await (await fetch("/api/fetch",{method:"POST"})).json();
+        if(r.ok){
+          await refreshData();
+          buttons.forEach(btn => { btn.textContent="Erfolgreich: "+r.week; });
+        } else {
+          buttons.forEach(btn => { btn.textContent="Fehler"; });
+        }
+      }
+      catch { buttons.forEach(btn => { btn.textContent="Fehler"; }); }
+      setTimeout(()=>{
+        refreshBtn.disabled=false; refreshBtn.textContent="Daten aktualisieren";
+        if (triggerBtn && triggerBtn !== refreshBtn) {
+          triggerBtn.disabled=false;
+          triggerBtn.textContent="Jetzt sammeln";
+        }
+      }, 2500);
+    }
+    $("btn-refresh").onclick = collectNow;
+    document.querySelectorAll(".nav button").forEach(b => b.onclick = () => {
+      S.tab=b.dataset.tab;
+      document.querySelectorAll(".nav button").forEach(x=>{ x.classList.toggle("active",x===b);
+        x===b ? x.setAttribute("aria-current","page") : x.removeAttribute("aria-current"); });
+      render();
+    });
+
+    // Steuerungselemente einmalig beim Laden verbinden
+    $("gran-seg").querySelectorAll("button").forEach(b => b.onclick = () => {
+      if (S.gran === b.dataset.gran) return;
+      S.gran = b.dataset.gran;
+      S.period = null;
+      render();
+    });
+    $("period-sel").onchange = ev => {
+      S.period = ev.target.value;
+      render();
+    };
+
+    // KPI Card Drag & Drop Event Handlers
+    window.kpiDragStart = (ev, key) => {
+      ev.dataTransfer.setData("text/plain", key);
+      // Slight delay so the dragging class renders before the ghost image is captured
+      requestAnimationFrame(() => ev.currentTarget.classList.add("dragging"));
+      ev.dataTransfer.effectAllowed = "move";
+    };
+    window.kpiDragOver = (ev) => {
+      ev.preventDefault();
+      ev.dataTransfer.dropEffect = "move";
+      // Only add if not already present to avoid repeated style recalc
+      if (!ev.currentTarget.classList.contains("drag-over")) {
+        ev.currentTarget.classList.add("drag-over");
+      }
+    };
+    window.kpiDragLeave = (ev) => {
+      // Only remove if the cursor truly left this card (not just a child element)
+      if (!ev.currentTarget.contains(ev.relatedTarget)) {
+        ev.currentTarget.classList.remove("drag-over");
+      }
+    };
+    window.kpiDrop = (ev, targetKey) => {
+      ev.preventDefault();
+      ev.currentTarget.classList.remove("drag-over");
+      const draggedKey = ev.dataTransfer.getData("text/plain");
+      if (draggedKey === targetKey) return;
+      
+      const g1 = METRICS[draggedKey]?.group;
+      const g2 = METRICS[targetKey]?.group;
+      if (g1 !== g2) return;
+      
+      const idx1 = S.metricOrder.indexOf(draggedKey);
+      const idx2 = S.metricOrder.indexOf(targetKey);
+      if (idx1 >= 0 && idx2 >= 0) {
+        S.metricOrder.splice(idx1, 1);
+        S.metricOrder.splice(idx2, 0, draggedKey);
+        localStorage.setItem("sm-metric-order", JSON.stringify(S.metricOrder));
+        render();
+      }
+    };
+    window.kpiDragEnd = (ev) => {
+      ev.currentTarget.classList.remove("dragging");
+      // Clean up any remaining drag-over highlights (e.g. if drop happened outside)
+      document.querySelectorAll(".kpi.drag-over").forEach(el => el.classList.remove("drag-over"));
+    };
+
+    (async () => { await loadStatus(); await refreshData(); if(!S.status?.configured) $("overlay").classList.add("open"); })();
+  </script>
+</body>
+</html>
